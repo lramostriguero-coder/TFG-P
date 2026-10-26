@@ -10,7 +10,7 @@ Por qué se normaliza: las variables tienen escalas muy distintas (llegadas
 escala comparable.
 
 Reglas que se aplican:
-  1. Variables continuas → estandarización z = (x − media) / desviación típica.
+  1. Variables continuas → valor normalizado = (x − media) / desviación típica.
      La lluvia es muy asimétrica (casi siempre 0), así que antes se aplica
      log(1 + x).
   2. Variables cíclicas (día de la semana, mes, día del año) → seno y coseno,
@@ -59,7 +59,7 @@ def transformar(datos: pd.DataFrame, params: pd.DataFrame) -> pd.DataFrame:
     out = datos[["particion", "dato_incompleto"]].copy()
     for col in CONTINUAS:
         x = np.log1p(datos[col]) if col in LOGARITMO else datos[col]
-        out[f"{col}_z"] = ((x - params.loc[col, "media"]) / params.loc[col, "desviacion"]).round(4)
+        out[f"{col}_normalizada"] = ((x - params.loc[col, "media"]) / params.loc[col, "desviacion"]).round(4)
     for col, periodo in CICLICAS.items():
         valor = datos[col] - (1 if col in ("mes", "dia_anio") else 0)       # empezar en 0
         out[f"{col}_sin"] = np.sin(2 * np.pi * valor / periodo).round(4)
@@ -84,8 +84,8 @@ def main():
     # y desnormalizar devuelve exactamente los valores originales.
     entr = norm[(norm["particion"] == "entrenamiento") & (~norm["dato_incompleto"])]
     for col in CONTINUAS:
-        assert abs(entr[f"{col}_z"].mean()) < 1e-3 and abs(entr[f"{col}_z"].std() - 1) < 1e-3, col
-        assert np.allclose(desnormalizar(norm[f"{col}_z"], col, params), datos[col], atol=0.01), col
+        assert abs(entr[f"{col}_normalizada"].mean()) < 1e-3 and abs(entr[f"{col}_normalizada"].std() - 1) < 1e-3, col
+        assert np.allclose(desnormalizar(norm[f"{col}_normalizada"], col, params), datos[col], atol=0.01), col
 
     params.round(6).to_csv(PROCESADOS / "parametros_normalizacion.csv")
     norm.to_csv(PROCESADOS / "dataset_fase1_normalizado.csv")
