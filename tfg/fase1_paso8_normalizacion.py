@@ -16,7 +16,7 @@ Reglas que se aplican:
   2. Variables cíclicas (día de la semana, mes, día del año) → seno y coseno,
      para que el modelo sepa que el domingo va justo antes del lunes y
      diciembre justo antes de enero. Quedan entre −1 y 1.
-  3. Variables binarias (0/1: festivo, puente, vacaciones…) → se dejan igual.
+  3. Variables binarias (0/1: festivo, vacaciones…) → se dejan igual.
 
 MUY IMPORTANTE: la media y la desviación se calculan SOLO con los días de
 ENTRENAMIENTO (2022-2023) y sin los días incompletos. Después se aplican esos
@@ -38,12 +38,10 @@ RAIZ = Path(__file__).resolve().parent.parent
 PROCESADOS = RAIZ / "datos" / "procesados"
 
 CONTINUAS = ["llegadas", "llegadas_PED", "llegadas_GIN", "llegadas_GEN",
-             "temp_max", "temp_min", "temp_media", "precipitacion", "humedad", "amplitud_termica"]
+             "temp_max", "temp_min", "temp_media", "precipitacion", "humedad"]
 LOGARITMO = ["precipitacion"]
 CICLICAS = {"dia_semana": 7, "mes": 12, "dia_anio": 365.25}
-BINARIAS = ["fin_de_semana", "festivo", "primer_laborable",
-            "puente", "vacaciones_escolares", "dia_lectivo",
-            "dia_lluvia", "calor_extremo", "helada"]
+BINARIAS = ["fin_de_semana", "festivo", "vacaciones_escolares", "dia_lectivo"]
 
 
 def ajustar(datos: pd.DataFrame) -> pd.DataFrame:

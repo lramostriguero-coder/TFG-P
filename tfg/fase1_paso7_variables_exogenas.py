@@ -115,11 +115,6 @@ def variables_calendario(fechas: pd.DatetimeIndex) -> pd.DataFrame:
 
     no_laborable = (c["fin_de_semana"] == 1) | (c["festivo"] == 1)
     laborable = ~no_laborable
-    # Día laborable justo después de uno o varios días no laborables (p. ej. los lunes)
-    c["primer_laborable"] = (laborable & no_laborable.shift(1, fill_value=True)).astype(int)
-    # Puente: laborable entre un festivo y un fin de semana (o entre dos no laborables)
-    c["puente"] = (laborable & no_laborable.shift(1, fill_value=False)
-                   & no_laborable.shift(-1, fill_value=False)).astype(int)
 
     c["vacaciones_escolares"] = 0
     c["tipo_vacaciones"] = ""
@@ -136,10 +131,6 @@ def variables_meteo(fechas: pd.DatetimeIndex) -> pd.DataFrame:
     m = pd.read_csv(EXTERNOS / "meteo_open_meteo_2022_2025.csv", parse_dates=["fecha"]).set_index("fecha")
     m = m.reindex(fechas)
     assert m.notna().all().all(), "Faltan días en la meteorología"
-    m["dia_lluvia"] = (m["precipitacion"] >= 1).astype(int)          # al menos 1 mm
-    m["calor_extremo"] = (m["temp_max"] >= 36).astype(int)           # umbral de aviso por calor en Madrid
-    m["helada"] = (m["temp_min"] < 0).astype(int)
-    m["amplitud_termica"] = (m["temp_max"] - m["temp_min"]).round(1)
     return m
 
 
