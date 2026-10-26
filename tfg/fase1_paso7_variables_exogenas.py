@@ -16,7 +16,9 @@ A) CALENDARIO
      2025, Decreto 93/2024, BOCM 26/09/2024). Validados además con la
      librería `holidays` (Spain, subdiv='MD'): coinciden los 48 días.
    - Calendario escolar: notas oficiales de la Comunidad de Madrid para
-     Infantil y Primaria de los cursos 2021-22 a 2025-26.
+     Infantil y Primaria de los cursos 2021-22 a 2025-26. El curso 2025-26
+     está confirmado con la Orden 1476/2025 (BOCM núm. 113, 13/05/2025) y la
+     nota de prensa oficial de 06/05/2025.
    No se incluyen las 2 fiestas locales de cada municipio, porque los
    pacientes vienen de muchos municipios distintos (Majadahonda, Las Rozas,
    Pozuelo, Boadilla...).
@@ -85,7 +87,7 @@ VACACIONES = [
     ("2024-12-21", "2025-01-07", "Navidad"),       # curso 2024-25
     ("2025-04-11", "2025-04-21", "Semana Santa"),
     ("2025-06-21", "2025-09-07", "Verano"),        # fin 20/06/2025, inicio 08/09/2025
-    ("2025-12-20", "2025-12-31", "Navidad"),       # curso 2025-26 (hasta el 07/01/2026)
+    ("2025-12-20", "2025-12-31", "Navidad"),       # curso 2025-26 (Orden 1476/2025); la serie acaba el 31/12
 ]
 # Días no lectivos sueltos (fuera de los periodos vacacionales y de los festivos)
 NO_LECTIVOS = [
