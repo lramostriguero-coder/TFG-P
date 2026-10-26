@@ -117,13 +117,9 @@ def variables_calendario(fechas: pd.DatetimeIndex) -> pd.DataFrame:
     laborable = ~no_laborable
     # Día laborable justo después de uno o varios días no laborables (p. ej. los lunes)
     c["primer_laborable"] = (laborable & no_laborable.shift(1, fill_value=True)).astype(int)
-    # Víspera y día siguiente a un festivo
-    c["vispera_festivo"] = c["festivo"].shift(-1, fill_value=0).astype(int)
-    c["post_festivo"] = c["festivo"].shift(1, fill_value=0).astype(int)
     # Puente: laborable entre un festivo y un fin de semana (o entre dos no laborables)
     c["puente"] = (laborable & no_laborable.shift(1, fill_value=False)
                    & no_laborable.shift(-1, fill_value=False)).astype(int)
-    c["nochebuena_nochevieja"] = (((c["mes"] == 12) & c["dia_mes"].isin([24, 31]))).astype(int)
 
     c["vacaciones_escolares"] = 0
     c["tipo_vacaciones"] = ""

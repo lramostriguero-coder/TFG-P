@@ -41,8 +41,8 @@ CONTINUAS = ["llegadas", "llegadas_PED", "llegadas_GIN", "llegadas_GEN",
              "temp_max", "temp_min", "temp_media", "precipitacion", "humedad", "amplitud_termica"]
 LOGARITMO = ["precipitacion"]
 CICLICAS = {"dia_semana": 7, "mes": 12, "dia_anio": 365.25}
-BINARIAS = ["fin_de_semana", "festivo", "primer_laborable", "vispera_festivo", "post_festivo",
-            "puente", "nochebuena_nochevieja", "vacaciones_escolares", "dia_lectivo",
+BINARIAS = ["fin_de_semana", "festivo", "primer_laborable",
+            "puente", "vacaciones_escolares", "dia_lectivo",
             "dia_lluvia", "calor_extremo", "helada"]
 
 
