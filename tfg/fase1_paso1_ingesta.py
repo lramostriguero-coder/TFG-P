@@ -186,8 +186,13 @@ def curar_codificacion(cod: pd.DataFrame, ep: pd.DataFrame, informe: dict) -> pd
     cod["orden"] = pd.to_numeric(cod["orden"]).astype(int)
     cod["fecha"] = a_fecha(cod["fecha"], informe, "codificacion.fecha")
 
-    informe["cod_duplicados"] = int(cod.duplicated(["acto_clinico", "orden"]).sum())
-    cod = cod.drop_duplicates(["acto_clinico", "orden"], keep="last")
+    # Un código está duplicado solo si se repite el mismo episodio, orden, tipo y código.
+    # (Puede haber dos códigos distintos con el mismo `orden`, p. ej. un procedimiento
+    # y un antecedente: eso NO es un duplicado y se conservan los dos.)
+    clave = ["acto_clinico", "orden", "tipo", "codigo"]
+    informe["cod_duplicados"] = int(cod.duplicated(clave).sum())
+    informe["cod_orden_repetido"] = int(cod.duplicated(["acto_clinico", "orden"]).sum())
+    cod = cod.drop_duplicates(clave, keep="last")
 
     huerfanos = ~cod["acto_clinico"].isin(ep["acto_clinico"])
     informe["cod_huerfanos"] = int(huerfanos.sum())          # códigos sin episodio
@@ -234,7 +239,8 @@ def escribir_informe(ep: pd.DataFrame, cod: pd.DataFrame, inf: dict, ruta: Path)
         "## Duplicados", "",
         f"- Episodios duplicados (mismo `acto_clinico`): {inf['ep_duplicados_acto']} "
         f"(idénticos en todo: {inf['ep_duplicados_exactos']}) → eliminados",
-        f"- Codificación duplicada (mismo episodio y `orden`): {inf['cod_duplicados']} → eliminados",
+        f"- Codificación duplicada (mismo episodio, orden, tipo y código): {inf['cod_duplicados']} → eliminados",
+        f"- Mismo episodio y `orden` pero códigos distintos: {inf['cod_orden_repetido']} → se conservan (no son duplicados)",
         f"- Códigos sin episodio asociado: {inf['cod_huerfanos']}", "",
         "## Datos inválidos e incoherentes (se marcan, no se borran)", "",
         "| Marca | Episodios | Significado |", "|---|---|---|",

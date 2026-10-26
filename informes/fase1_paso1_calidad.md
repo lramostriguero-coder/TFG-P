@@ -8,7 +8,8 @@
 ## Duplicados
 
 - Episodios duplicados (mismo `acto_clinico`): 0 (idénticos en todo: 0) → eliminados
-- Codificación duplicada (mismo episodio y `orden`): 1 → eliminados
+- Codificación duplicada (mismo episodio, orden, tipo y código): 0 → eliminados
+- Mismo episodio y `orden` pero códigos distintos: 1 → se conservan (no son duplicados)
 - Códigos sin episodio asociado: 0
 
 ## Datos inválidos e incoherentes (se marcan, no se borran)
@@ -39,7 +40,7 @@
 ## Resultado
 
 - `episodios_limpios.parquet`: **778,472** episodios × 34 columnas
-- `codificacion_limpia.parquet`: **3,816,118** filas
+- `codificacion_limpia.parquet`: **3,816,119** filas
 - Episodios con diagnóstico principal: 94.5 %
 
 ### Reparto por área asistencial
