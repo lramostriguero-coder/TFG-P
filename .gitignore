@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# Datos de pacientes: nunca se suben al repositorio
+datos/
