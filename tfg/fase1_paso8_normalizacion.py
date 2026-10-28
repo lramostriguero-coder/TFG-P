@@ -10,9 +10,7 @@ Por qué se normaliza: las variables tienen escalas muy distintas (llegadas
 escala comparable.
 
 Reglas que se aplican:
-  1. Variables continuas → valor normalizado = (x − media) / desviación típica.
-     La lluvia es muy asimétrica (casi siempre 0), así que antes se aplica
-     log(1 + x).
+  1. Variables continuas → valor normalizado = (valor − media) / desviación típica.
   2. Variables cíclicas (día de la semana, mes, día del año) → seno y coseno,
      para que el modelo sepa que el domingo va justo antes del lunes y
      diciembre justo antes de enero. Quedan entre −1 y 1.
@@ -39,7 +37,7 @@ PROCESADOS = RAIZ / "datos" / "procesados"
 
 CONTINUAS = ["llegadas", "llegadas_PED", "llegadas_GIN", "llegadas_GEN",
              "temp_max", "temp_min", "temp_media", "precipitacion", "humedad"]
-LOGARITMO = ["precipitacion"]
+LOGARITMO = []          # sin transformaciones extra: el anteproyecto solo pide normalizar
 CICLICAS = {"dia_semana": 7, "mes": 12, "dia_anio": 365.25}
 BINARIAS = ["fin_de_semana", "festivo", "vacaciones_escolares", "dia_lectivo"]
 
