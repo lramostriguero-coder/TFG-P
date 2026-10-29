@@ -17,7 +17,7 @@ Reglas que se aplican:
   3. Variables binarias (0/1: festivo, vacaciones…) → se dejan igual.
 
 MUY IMPORTANTE: la media y la desviación se calculan SOLO con los días de
-ENTRENAMIENTO (2022-2023) y sin los días incompletos. Después se aplican esos
+ENTRENAMIENTO (2022-2023); los días incompletos ya se eliminaron en el paso 2. Después se aplican esos
 mismos valores a validación y test. Si se usaran los datos de 2024-2025 para
 calcularlas, el modelo "vería" información del futuro (fuga de datos).
 
@@ -44,7 +44,7 @@ BINARIAS = ["fin_de_semana", "festivo", "vacaciones_escolares", "dia_lectivo"]
 
 def ajustar(datos: pd.DataFrame) -> pd.DataFrame:
     """Calcula media y desviación de cada variable continua con el entrenamiento."""
-    entr = datos[(datos["particion"] == "entrenamiento") & (~datos["dato_incompleto"])]
+    entr = datos[datos["particion"] == "entrenamiento"]
     filas = []
     for col in CONTINUAS:
         x = np.log1p(entr[col]) if col in LOGARITMO else entr[col]
@@ -54,7 +54,7 @@ def ajustar(datos: pd.DataFrame) -> pd.DataFrame:
 
 
 def transformar(datos: pd.DataFrame, params: pd.DataFrame) -> pd.DataFrame:
-    out = datos[["particion", "dato_incompleto"]].copy()
+    out = datos[["particion"]].copy()
     for col in CONTINUAS:
         x = np.log1p(datos[col]) if col in LOGARITMO else datos[col]
         out[f"{col}_normalizada"] = ((x - params.loc[col, "media"]) / params.loc[col, "desviacion"]).round(4)
@@ -80,7 +80,7 @@ def main():
 
     # Comprobaciones: en entrenamiento cada variable z tiene media 0 y desviación 1,
     # y desnormalizar devuelve exactamente los valores originales.
-    entr = norm[(norm["particion"] == "entrenamiento") & (~norm["dato_incompleto"])]
+    entr = norm[norm["particion"] == "entrenamiento"]
     for col in CONTINUAS:
         assert abs(entr[f"{col}_normalizada"].mean()) < 1e-3 and abs(entr[f"{col}_normalizada"].std() - 1) < 1e-3, col
         assert np.allclose(desnormalizar(norm[f"{col}_normalizada"], col, params), datos[col], atol=0.01), col

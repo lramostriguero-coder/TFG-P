@@ -50,12 +50,12 @@ Resumen de todo lo trabajado hasta ahora (29/10/2026), para retomar el trabajo c
 
 ### Paso 2 · Serie diaria continua — ✅ `tfg/fase1_paso2_serie_diaria.py`
 
-- **1.461 días** (01/01/2022–31/12/2025), sin huecos.
-- Columnas: `llegadas` (lo que se predice), `llegadas_PED`, `llegadas_GIN`, `llegadas_GEN` (suman `llegadas`), `salidas` (solo referencia), `dato_incompleto`, `particion`.
+- Se construye con los **1.461 días** (01/01/2022–31/12/2025) y se **eliminan los 3 días incompletos** → quedan **1.458 días**.
+- Columnas: `llegadas` (lo que se predice), `llegadas_PED`, `llegadas_GIN`, `llegadas_GEN` (suman `llegadas`), `salidas` (solo referencia), `particion`.
 - **Particiones cronológicas:** entrenamiento 2022–2023 · validación 2024 · test 2025.
 - Salida: `datos/procesados/serie_diaria.csv` y `informes/fase1_paso2_serie_diaria.png`.
 
-### Días incompletos — ⏳ PENDIENTE
+### Días incompletos — ✅ eliminados (decisión de la tutora)
 
 | Día | Problema |
 |---|---|
@@ -63,7 +63,9 @@ Resumen de todo lo trabajado hasta ahora (29/10/2026), para retomar el trabajo c
 | 16/06/2023 | Ninguna salida de 14:00 a 23:59 |
 | 31/12/2025 | Faltan los pacientes que salieron en 2026 (no hay fichero de 2026) |
 
-Están marcados con `dato_incompleto = Sí`. **Falta decidir cómo tratarlos: espera a que la tutora apruebe un método.** Es lo único que falta para cerrar la Fase 1.
+**La tutora ha decidido eliminarlos.** Se quitan en el paso 2 (`serie_diaria.csv` ya no los tiene): 2 días de entrenamiento (2023) y 1 de test (2025); validación no pierde ninguno. Quedan entrenamiento 728 días, validación 366 y test 364. La gráfica del paso 2 los sigue mostrando en rojo para documentarlo.
+
+Consecuencia para la Fase 2: la serie tiene 3 huecos de un día. Los retardos (día anterior, mismo día de la semana anterior) deben buscarse **por fecha**, no por posición de fila.
 
 ### Paso 7 · Variables exógenas — ✅ `tfg/fase1_paso7_variables_exogenas.py`
 
@@ -81,7 +83,7 @@ Salida: `datos/procesados/dataset_fase1.csv`.
 ### Paso 8 · Normalización — ✅ `tfg/fase1_paso8_normalizacion.py`
 
 - **Continuas** (llegadas y desgloses, temperaturas, precipitación, humedad): `(x − media) / desviación` (estandarización). Columnas `…_normalizada`.
-- **Media y desviación solo con entrenamiento** y sin días incompletos (728 días), para evitar fuga de datos. Desviación típica muestral (`DESVEST.M`).
+- **Media y desviación solo con entrenamiento** (728 días, ya sin los incompletos), para evitar fuga de datos. Desviación típica muestral (`DESVEST.M`).
   - Ejemplo: llegadas media 523,698 y desviación 61,280 → 01/01/2022: (521 − 523,698) / 61,280 = −0,044.
   - Precipitación sin logaritmo: media 1,424 mm, desviación 4,991 mm.
 - **Cíclicas** (`dia_semana`, `mes`, `dia_anio`): seno y coseno con periodo 7, 12 y 365,25. Decidido mantenerlas. **La elección del método de normalización conviene confirmarla con la tutora.**
@@ -122,7 +124,8 @@ Los resultados se guardan en `datos/procesados/` (no se suben a GitHub).
 
 ## 6. Pendientes
 
-- [ ] Método para los 3 días incompletos (espera a la tutora).
+- [x] Método para los 3 días incompletos: eliminarlos (tutora).
+- [ ] Volver a ejecutar los pasos 2, 7 y 8 y actualizar el Excel de la Fase 1 sin esos 3 días.
 - [ ] Confirmar con la tutora el método de normalización.
 - [ ] Unir la rama `fase1-paso1-ingesta` a `main` (pull request).
 - [ ] Empezar la Fase 2 por los baselines.

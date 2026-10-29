@@ -11,8 +11,11 @@ Qué hace este script:
        (`fecha_fin`) como referencia.
     2. Garantiza un calendario continuo: los 1.461 días de 2022-2025, aunque un
        día no tuviera ningún episodio.
-    3. Marca los días con registros perdidos (`dato_incompleto`), que NO deben
-       usarse tal cual para entrenar ni para evaluar.
+    3. Marca los días con registros perdidos (`dato_incompleto`) y los ELIMINA
+       de la serie guardada, por indicación de la tutora: 2 días de
+       entrenamiento (14/04/2023 y 16/06/2023) y 1 de test (31/12/2025).
+       La serie queda con 1.458 días. La gráfica sí los muestra, para
+       documentar qué se ha quitado.
     4. Asigna a cada día su partición cronológica:
            entrenamiento  2022-01-01 → 2023-12-31   (el modelo aprende aquí)
            validación     2024-01-01 → 2024-12-31   (elegimos configuraciones aquí)
@@ -43,7 +46,7 @@ PARTICIONES = [                      # (nombre, desde, hasta) — ambos incluido
 ]
 
 # Días con episodios perdidos, detectados al revisar las salidas por hora
-# (ver informe del paso 1 y la explicación en la conversación):
+# (ver informe del paso 1). Decisión de la tutora: se eliminan de la serie.
 DIAS_INCOMPLETOS = {
     "2023-04-14": "casi no hay salidas registradas en todo el día (90 de ~500)",
     "2023-06-16": "no hay ninguna salida registrada de 14:00 a 23:59",
@@ -99,7 +102,7 @@ def grafica(serie: pd.DataFrame, ruta: Path):
     ax.scatter(malos.index, malos["llegadas"], s=40, color=rojo, zorder=4,
                edgecolor="white", linewidth=1.5)
     for fecha, fila in malos.iterrows():
-        ax.annotate(f"{fecha:%d/%m/%Y}\n{fila['llegadas']} (incompleto)",
+        ax.annotate(f"{fecha:%d/%m/%Y}\n{fila['llegadas']} (incompleto, eliminado)",
                     (fecha, fila["llegadas"]), xytext=(8, -4), textcoords="offset points",
                     fontsize=8, color=gris, va="top")
 
@@ -132,11 +135,16 @@ def main():
     ep = pd.read_parquet(PROCESADOS / "episodios_limpios.parquet",
                          columns=["fecha_inicio", "fecha_fin", "area"])
     serie = construir_serie(ep)
-    serie.to_csv(PROCESADOS / "serie_diaria.csv")
     INFORMES.mkdir(exist_ok=True)
     grafica(serie, INFORMES / "fase1_paso2_serie_diaria.png")
     print(resumen(serie))
-    print(f"\nGuardado: {PROCESADOS / 'serie_diaria.csv'} ({len(serie)} días)")
+
+    # Se eliminan los días incompletos (decisión de la tutora)
+    final = serie[~serie["dato_incompleto"]].drop(columns="dato_incompleto")
+    assert len(final) == len(serie) - len(DIAS_INCOMPLETOS)
+    final.to_csv(PROCESADOS / "serie_diaria.csv")
+    print(f"\nEliminados {len(DIAS_INCOMPLETOS)} días incompletos: {', '.join(DIAS_INCOMPLETOS)}")
+    print(f"Guardado: {PROCESADOS / 'serie_diaria.csv'} ({len(final)} días)")
 
 
 if __name__ == "__main__":

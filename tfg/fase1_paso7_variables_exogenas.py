@@ -143,10 +143,12 @@ def main():
     met = variables_meteo(fechas)
     datos = pd.concat([serie.drop(columns=["dia_semana"]), cal, met], axis=1)
 
-    # Comprobaciones de alineación temporal: mismo calendario y sin huecos
-    assert len(datos) == 1461 and datos.index.is_monotonic_increasing
-    assert (datos.index.to_series().diff().dropna() == pd.Timedelta(days=1)).all()
-    assert datos["festivo"].sum() == len(FESTIVOS)
+    # Comprobaciones de alineación temporal: mismo calendario y solo faltan
+    # los 3 días incompletos eliminados en el paso 2
+    completo = pd.date_range("2022-01-01", "2025-12-31", freq="D")
+    eliminados = pd.to_datetime(["2023-04-14", "2023-06-16", "2025-12-31"])
+    assert datos.index.equals(completo.difference(eliminados))
+    assert datos["festivo"].sum() == len(FESTIVOS)                    # ningún eliminado es festivo
     try:                                                              # validación cruzada opcional
         import holidays
         lib = {pd.Timestamp(d) for y in range(2022, 2026) for d in holidays.Spain(years=y, subdiv="MD")}
