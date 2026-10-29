@@ -5,3 +5,4 @@ __pycache__/
 datos/*
 # Excepción: datos públicos externos (meteorología)
 !datos/externos/
+.venv/

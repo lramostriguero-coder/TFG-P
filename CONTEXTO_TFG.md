@@ -113,6 +113,7 @@ Según el anteproyecto:
 ## 5. Cómo ejecutar
 
 ```bash
+python -m venv .venv          # una sola vez; luego usar .venv\Scripts\python.exe
 pip install -r requirements.txt
 python tfg/fase1_paso1_ingesta.py --origen "C:/PAULA/UNI/TFG/Datos_urgencias"
 python tfg/fase1_paso2_serie_diaria.py
@@ -125,7 +126,8 @@ Los resultados se guardan en `datos/procesados/` (no se suben a GitHub).
 ## 6. Pendientes
 
 - [x] Método para los 3 días incompletos: eliminarlos (tutora).
-- [ ] Volver a ejecutar los pasos 2, 7 y 8 y actualizar el Excel de la Fase 1 sin esos 3 días.
+- [x] Volver a ejecutar los pasos 1, 2, 7 y 8 sin esos 3 días (29/10/2026): 1.458 días, parámetros de normalización sin cambios.
+- [ ] Actualizar el Excel de la Fase 1 (`datos_urgencias_fase1.xlsx`) sin esos 3 días.
 - [ ] Confirmar con la tutora el método de normalización.
 - [ ] Unir la rama `fase1-paso1-ingesta` a `main` (pull request).
 - [ ] Empezar la Fase 2 por los baselines.
