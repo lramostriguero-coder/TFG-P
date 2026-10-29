@@ -92,7 +92,7 @@ Salida: `datos/procesados/dataset_fase1.csv`.
 
 ### Excel de la Fase 1
 
-En la carpeta local hay un Excel con las hojas de serie diaria, resumen, variables exógenas, parámetros de normalización y normalización, con las fórmulas visibles. Si se modifica, cerrarlo antes en Excel para no perder cambios.
+En `C:\PAULA\UNI\TFG\Datos_urgencias\FASE1` hay dos Excel con las fórmulas visibles: `datos_urgencias_fase1.xlsx` (unificación, errores, serie diaria y resumen) y `variables_exogenas_y_normalizadas_fase1.xlsx` (leyenda, variables exógenas, datos de entrenamiento, parámetros de normalización, normalización, festivos y calendario escolar). Los dos tienen ya 1.458 días. Si se modifica, cerrarlo antes en Excel para no perder cambios.
 
 ## 4. Fase 2 — Modelos de predicción (siguiente)
 
@@ -128,7 +128,7 @@ Los resultados se guardan en `datos/procesados/` (no se suben a GitHub).
 - [x] Método para los 3 días incompletos: eliminarlos (tutora).
 - [x] Volver a ejecutar los pasos 1, 2, 7 y 8 sin esos 3 días (29/10/2026): 1.458 días.
 - [x] `datos_urgencias_fase1.xlsx` sin esos 3 días ni la columna Incompleto (copia previa en `FASE1\copia_antes_eliminar_incompletos\`).
-- [ ] `variables_exogenas_y_normalizadas_fase1.xlsx`: quitar los 3 días y pasar la normalización a min-max (MIN/MAX de «Datos entrenamiento»).
+- [x] `variables_exogenas_y_normalizadas_fase1.xlsx` sin esos 3 días ni la columna Dato_incompleto, y con normalización min-max (`MIN`/`MAX` de «Datos entrenamiento»). Coincide con Python (diferencias < 0,0001 por el redondeo).
 - [x] Normalización min-max en el paso 8.
 - [ ] Unir la rama `fase1-paso1-ingesta` a `main` (pull request).
 - [ ] Empezar la Fase 2 por los baselines.
