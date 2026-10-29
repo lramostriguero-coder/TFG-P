@@ -10,16 +10,20 @@ Por qué se normaliza: las variables tienen escalas muy distintas (llegadas
 escala comparable.
 
 Reglas que se aplican:
-  1. Variables continuas → valor normalizado = (valor − media) / desviación típica.
+  1. Variables continuas → normalización min-max:
+         valor normalizado = (valor − mínimo) / (máximo − mínimo)
+     Queda entre 0 (el mínimo) y 1 (el máximo).
   2. Variables cíclicas (día de la semana, mes, día del año) → seno y coseno,
      para que el modelo sepa que el domingo va justo antes del lunes y
      diciembre justo antes de enero. Quedan entre −1 y 1.
   3. Variables binarias (0/1: festivo, vacaciones…) → se dejan igual.
 
-MUY IMPORTANTE: la media y la desviación se calculan SOLO con los días de
-ENTRENAMIENTO (2022-2023); los días incompletos ya se eliminaron en el paso 2. Después se aplican esos
-mismos valores a validación y test. Si se usaran los datos de 2024-2025 para
-calcularlas, el modelo "vería" información del futuro (fuga de datos).
+MUY IMPORTANTE: el mínimo y el máximo se calculan SOLO con los días de
+ENTRENAMIENTO (2022-2023); los días incompletos ya se eliminaron en el paso 2.
+Después se aplican esos mismos valores a validación y test. Si se usaran los
+datos de 2024-2025 para calcularlos, el modelo "vería" información del futuro
+(fuga de datos). Por eso, en validación y test algún día puede quedar un poco
+por debajo de 0 o por encima de 1, si supera los valores de entrenamiento.
 
 Los parámetros se guardan en `parametros_normalizacion.csv` para poder
 deshacer la normalización de las predicciones (volver a "pacientes/día").
@@ -43,13 +47,13 @@ BINARIAS = ["fin_de_semana", "festivo", "vacaciones_escolares", "dia_lectivo"]
 
 
 def ajustar(datos: pd.DataFrame) -> pd.DataFrame:
-    """Calcula media y desviación de cada variable continua con el entrenamiento."""
+    """Calcula el mínimo y el máximo de cada variable continua con el entrenamiento."""
     entr = datos[datos["particion"] == "entrenamiento"]
     filas = []
     for col in CONTINUAS:
         x = np.log1p(entr[col]) if col in LOGARITMO else entr[col]
-        filas.append({"variable": col, "transformacion": "log(1+x) y z" if col in LOGARITMO else "z",
-                      "media": x.mean(), "desviacion": x.std(), "dias_usados": len(x)})
+        filas.append({"variable": col, "transformacion": "log(1+x) y min-max" if col in LOGARITMO else "min-max",
+                      "minimo": x.min(), "maximo": x.max(), "dias_usados": len(x)})
     return pd.DataFrame(filas).set_index("variable")
 
 
@@ -57,7 +61,8 @@ def transformar(datos: pd.DataFrame, params: pd.DataFrame) -> pd.DataFrame:
     out = datos[["particion"]].copy()
     for col in CONTINUAS:
         x = np.log1p(datos[col]) if col in LOGARITMO else datos[col]
-        out[f"{col}_normalizada"] = ((x - params.loc[col, "media"]) / params.loc[col, "desviacion"]).round(4)
+        mn, mx = params.loc[col, "minimo"], params.loc[col, "maximo"]
+        out[f"{col}_normalizada"] = ((x - mn) / (mx - mn)).round(4)
     for col, periodo in CICLICAS.items():
         valor = datos[col] - (1 if col in ("mes", "dia_anio") else 0)       # empezar en 0
         out[f"{col}_sin"] = np.sin(2 * np.pi * valor / periodo).round(4)
@@ -69,7 +74,8 @@ def transformar(datos: pd.DataFrame, params: pd.DataFrame) -> pd.DataFrame:
 
 def desnormalizar(z, variable: str, params: pd.DataFrame):
     """Convierte una predicción normalizada de vuelta a su escala original."""
-    x = np.asarray(z) * params.loc[variable, "desviacion"] + params.loc[variable, "media"]
+    mn, mx = params.loc[variable, "minimo"], params.loc[variable, "maximo"]
+    x = np.asarray(z) * (mx - mn) + mn
     return np.expm1(x) if variable in LOGARITMO else x
 
 
@@ -78,12 +84,13 @@ def main():
     params = ajustar(datos)
     norm = transformar(datos, params)
 
-    # Comprobaciones: en entrenamiento cada variable z tiene media 0 y desviación 1,
-    # y desnormalizar devuelve exactamente los valores originales.
+    # Comprobaciones: en entrenamiento cada variable va exactamente de 0 a 1,
+    # y desnormalizar devuelve los valores originales.
     entr = norm[norm["particion"] == "entrenamiento"]
     for col in CONTINUAS:
-        assert abs(entr[f"{col}_normalizada"].mean()) < 1e-3 and abs(entr[f"{col}_normalizada"].std() - 1) < 1e-3, col
-        assert np.allclose(desnormalizar(norm[f"{col}_normalizada"], col, params), datos[col], atol=0.01), col
+        assert entr[f"{col}_normalizada"].min() == 0 and entr[f"{col}_normalizada"].max() == 1, col
+        tol = 1e-4 * (params.loc[col, "maximo"] - params.loc[col, "minimo"]) + 1e-9    # por el redondeo a 4 decimales
+        assert np.allclose(desnormalizar(norm[f"{col}_normalizada"], col, params), datos[col], atol=tol), col
 
     params.round(6).to_csv(PROCESADOS / "parametros_normalizacion.csv")
     norm.to_csv(PROCESADOS / "dataset_fase1_normalizado.csv")

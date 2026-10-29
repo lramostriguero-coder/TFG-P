@@ -82,11 +82,11 @@ Salida: `datos/procesados/dataset_fase1.csv`.
 
 ### Paso 8 · Normalización — ✅ `tfg/fase1_paso8_normalizacion.py`
 
-- **Continuas** (llegadas y desgloses, temperaturas, precipitación, humedad): `(x − media) / desviación` (estandarización). Columnas `…_normalizada`.
-- **Media y desviación solo con entrenamiento** (728 días, ya sin los incompletos), para evitar fuga de datos. Desviación típica muestral (`DESVEST.M`).
-  - Ejemplo: llegadas media 523,698 y desviación 61,280 → 01/01/2022: (521 − 523,698) / 61,280 = −0,044.
-  - Precipitación sin logaritmo: media 1,424 mm, desviación 4,991 mm.
-- **Cíclicas** (`dia_semana`, `mes`, `dia_anio`): seno y coseno con periodo 7, 12 y 365,25. Decidido mantenerlas. **La elección del método de normalización conviene confirmarla con la tutora.**
+- **Continuas** (llegadas y desgloses, temperaturas, precipitación, humedad): **min-max**, `(x − mínimo) / (máximo − mínimo)`. Columnas `…_normalizada`. (Antes era estandarización `(x − media) / desviación`; se cambió el 29/10/2026 por indicación de Paula.)
+- **Mínimo y máximo solo con entrenamiento** (728 días, ya sin los incompletos), para evitar fuga de datos. En entrenamiento todo va de 0 a 1; en validación y test algún día se sale un poco (p. ej. `llegadas_PED` −0,125 en test, `llegadas_GIN` 1,058 en test, `humedad` 1,012 en validación).
+  - Ejemplo: llegadas mínimo 364 y máximo 735 → 01/01/2022: (521 − 364) / (735 − 364) = 0,423.
+  - Temperatura mínima: de −5,5 a 25,4 °C (los días bajo cero quedan en 0 o cerca). Precipitación: de 0 a 77,5 mm, sin logaritmo.
+- **Cíclicas** (`dia_semana`, `mes`, `dia_anio`): seno y coseno con periodo 7, 12 y 365,25. Decidido mantenerlas.
 - **Binarias** (`fin_de_semana`, `festivo`, `vacaciones_escolares`, `dia_lectivo`): se dejan igual.
 - Salida: `datos/procesados/dataset_fase1_normalizado.csv` y `parametros_normalizacion.csv` (para desnormalizar las predicciones con `desnormalizar()`).
 
@@ -126,8 +126,9 @@ Los resultados se guardan en `datos/procesados/` (no se suben a GitHub).
 ## 6. Pendientes
 
 - [x] Método para los 3 días incompletos: eliminarlos (tutora).
-- [x] Volver a ejecutar los pasos 1, 2, 7 y 8 sin esos 3 días (29/10/2026): 1.458 días, parámetros de normalización sin cambios.
-- [ ] Actualizar el Excel de la Fase 1 (`datos_urgencias_fase1.xlsx`) sin esos 3 días.
-- [ ] Confirmar con la tutora el método de normalización.
+- [x] Volver a ejecutar los pasos 1, 2, 7 y 8 sin esos 3 días (29/10/2026): 1.458 días.
+- [x] `datos_urgencias_fase1.xlsx` sin esos 3 días ni la columna Incompleto (copia previa en `FASE1\copia_antes_eliminar_incompletos\`).
+- [ ] `variables_exogenas_y_normalizadas_fase1.xlsx`: quitar los 3 días y pasar la normalización a min-max (MIN/MAX de «Datos entrenamiento»).
+- [x] Normalización min-max en el paso 8.
 - [ ] Unir la rama `fase1-paso1-ingesta` a `main` (pull request).
 - [ ] Empezar la Fase 2 por los baselines.
