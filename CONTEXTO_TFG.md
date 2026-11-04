@@ -37,15 +37,16 @@ Resumen de todo lo trabajado hasta ahora (29/10/2026), para retomar el trabajo c
 - Une los 4 años de episodios y de codificación.
 - **Duplicados:** no hay episodios duplicados. Se corrigió un error del script que borraba un registro de codificación que no era duplicado (mismo episodio y orden, códigos distintos: se conserva).
 - **Incompletos e incoherentes:** se **marcan** con columnas `flag_*`, no se borran (~6,4 % de los episodios):
-  `flag_sin_triaje` (6.112), `flag_triaje_incoherente` (1.143), `flag_estancia_larga` >72 h (1.064), `flag_fuera_periodo` (60), `flag_sin_diagnostico` (42.850), `flag_fin_antes_inicio` (0).
+  `flag_sin_triaje` (6.112), `flag_triaje_incoherente` (1.143), `flag_estancia_larga` >72 h (1.064), `flag_fuera_periodo` (60), `flag_sin_diagnostico` (42.850), `flag_fin_antes_inicio` (0), `flag_edad_invalida` (1: fecha de nacimiento 01/01/1800, edad vacía).
 - **Homogeneización:**
   - Tipos: fechas como fechas, números como números; vacíos unificados; fechas imposibles (`1900-01-00`) → vacías.
   - `nivel_triaje`: 1 a 5 (había más de 10 formas de escribirlo).
+  - `edad`: **años cumplidos el día de la llegada** (número entero), calculados con `f_nacimiento` y `fecha_inicio`. La edad del fichero era decimal y estaba redondeada a 2 decimales (a quien le faltaba 1 día para cumplir 16 le salía 16,00). Así un mismo paciente tiene la edad que tenía en cada episodio. Corregido el 04/11/2026: 30 episodios pasaron a PED (28 de GEN y 2 de GIN); las llegadas totales y los parámetros de normalización no cambian.
   - `area`: **PED** si edad < 16; **GIN** si servicio es Urgencias Ginecológicas, Urgencias Obstétricas u Obstetricia; **GEN** el resto.
   - `es_ingreso`: sí si `motivo_alta = "HOSPITALIZACION U"`.
   - `dx_capitulo`: capítulo CIE-10 del diagnóstico principal (22 grupos).
   - `duracion_min`: tiempo en urgencias.
-- Columnas descartadas: `fuente`, `resp_final`, `resp_ing`, `fecha_ing` (vacías), `resp_acl`, `resp_alta` (profesional), `tipo_acto` (constante), `f_nacimiento` (redundante con `edad`).
+- Columnas descartadas: `fuente`, `resp_final`, `resp_ing`, `fecha_ing` (vacías), `resp_acl`, `resp_alta` (profesional), `tipo_acto` (constante), `f_nacimiento` (dato personal; solo se usa para calcular `edad`).
 - Salida: `datos/procesados/episodios_limpios.parquet`, `codificacion_limpia.parquet` e informe `informes/fase1_paso1_calidad.md`.
 
 ### Paso 2 · Serie diaria continua — ✅ `tfg/fase1_paso2_serie_diaria.py`
@@ -130,5 +131,5 @@ Los resultados se guardan en `datos/procesados/` (no se suben a GitHub).
 - [x] `datos_urgencias_fase1.xlsx` sin esos 3 días ni la columna Incompleto (copia previa en `FASE1\copia_antes_eliminar_incompletos\`).
 - [x] `variables_exogenas_y_normalizadas_fase1.xlsx` sin esos 3 días ni la columna Dato_incompleto, y con normalización min-max (`MIN`/`MAX` de «Datos entrenamiento»). Coincide con Python (diferencias < 0,0001 por el redondeo).
 - [x] Normalización min-max en el paso 8.
-- [ ] Unir la rama `fase1-paso1-ingesta` a `main` (pull request).
+- [x] Unir la rama `fase1-paso1-ingesta` a `main` (lramostriguero-coder/TFG-P#1, 04/11/2026).
 - [ ] Empezar la Fase 2 por los baselines.
