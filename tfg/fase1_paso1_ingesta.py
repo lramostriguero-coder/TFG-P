@@ -44,7 +44,7 @@ COLUMNAS_DESCARTADAS = {
     "resp_acl": "identificador del profesional; no aporta a la predicción",
     "resp_alta": "identificador del profesional; no aporta a la predicción",
     "tipo_acto": "valor constante ('URGENCIAS')",
-    "f_nacimiento": "dato personal redundante con `edad` (se verifica antes la coherencia)",
+    "f_nacimiento": "dato personal; solo se usa para calcular `edad` (años cumplidos el día de la llegada)",
 }
 
 # Capítulos de la CIE-10-ES: (código inicial, código final, nombre corto).
@@ -133,15 +133,28 @@ def curar_episodios(ep: pd.DataFrame, informe: dict) -> pd.DataFrame:
             .sort_values("fecha_inicio", kind="stable")
             .reset_index(drop=True))
 
-    # --- Comprobación de coherencia de la edad antes de quitar f_nacimiento ---
-    edad_calc = (ep["fecha_inicio"] - ep["f_nacimiento"]).dt.days / 365.25
-    informe["ep_edad_incoherente"] = int(((edad_calc - ep["edad"]).abs() > 1).sum())
+    # --- Edad: años cumplidos el día de la llegada a urgencias ---
+    # La `edad` del fichero es decimal (p. ej. 4,76) y está redondeada a 2
+    # decimales, así que a alguien a quien le falta 1 día para cumplir 16 le
+    # aparece 16,00. Se recalcula con la fecha de nacimiento y la de llegada:
+    # se resta el año y se quita 1 si ese año aún no ha llegado el cumpleaños.
+    # Así cada episodio lleva la edad que tenía el paciente ESE día (un mismo
+    # paciente tiene edades distintas en 2022 y en 2025).
+    edad_decimal = (ep["fecha_inicio"] - ep["f_nacimiento"]).dt.days / 365.25
+    informe["ep_edad_incoherente"] = int(((edad_decimal - ep["edad"]).abs() > 1).sum())
+    fi, fn = ep["fecha_inicio"], ep["f_nacimiento"]
+    sin_cumple = (fi.dt.month < fn.dt.month) | ((fi.dt.month == fn.dt.month) & (fi.dt.day < fn.dt.day))
+    cumplidos = (fi.dt.year - fn.dt.year - sin_cumple.astype(int)).astype("Int64")
+    informe["ep_edad_redondeo"] = int((cumplidos != np.floor(ep["edad"])).sum())
+    # Edades imposibles (fechas de nacimiento de relleno como 1800-01-01): se dejan vacías y se marcan
+    ep["flag_edad_invalida"] = cumplidos.isna() | (cumplidos < 0) | (cumplidos > 120)
+    ep["edad"] = cumplidos.mask(ep["flag_edad_invalida"])
 
     # --- Campos homogeneizados ---
     ep["duracion_min"] = (ep["fecha_fin"] - ep["fecha_inicio"]).dt.total_seconds() / 60
     ep["es_ingreso"] = ep["motivo_alta"].eq("HOSPITALIZACION U")
     ep["area"] = np.select(
-        [ep["edad"] < 16,
+        [(ep["edad"] < 16).fillna(False).astype(bool),
          ep["servicio"].isin(["Urgencias Ginecológicas", "Urgencias Obstétricas", "Obstetricia"])],
         ["PED", "GIN"], default="GEN")
     # El triaje aparece escrito de varias formas ('4 ESTANDAR - 120 min',
@@ -251,6 +264,7 @@ def escribir_informe(ep: pd.DataFrame, cod: pd.DataFrame, inf: dict, ruta: Path)
         "flag_estancia_larga": "más de 72 h en urgencias",
         "flag_fin_antes_inicio": "fecha de salida anterior a la de llegada",
         "flag_fuera_periodo": "llegada fuera de 2022-2025",
+        "flag_edad_invalida": "fecha de nacimiento imposible (edad < 0 o > 120 años); edad vacía",
         "flag_sin_diagnostico": "sin diagnóstico principal codificado",
     }
     for f in flags:
@@ -258,7 +272,9 @@ def escribir_informe(ep: pd.DataFrame, cod: pd.DataFrame, inf: dict, ruta: Path)
     lineas += [
         "",
         f"- Fechas no válidas convertidas a nulo: {inf.get('fechas_invalidas', {})}",
-        f"- Edades incoherentes con la fecha de nacimiento (>1 año): {inf['ep_edad_incoherente']}",
+        f"- Edades del fichero incoherentes con la fecha de nacimiento (>1 año): {inf['ep_edad_incoherente']}",
+        f"- `edad` = años cumplidos el día de la llegada (entero). Episodios en los que no coincide "
+        f"con la parte entera de la edad decimal del fichero (por redondeo a 2 decimales): {inf['ep_edad_redondeo']}",
         "",
         "## Columnas descartadas", "",
         *[f"- `{c}`: {motivo}" for c, motivo in COLUMNAS_DESCARTADAS.items()],

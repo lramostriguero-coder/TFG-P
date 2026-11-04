@@ -16,6 +16,7 @@
 
 | Marca | Episodios | Significado |
 |---|---|---|
+| `flag_edad_invalida` | 1 (0.00 %) | fecha de nacimiento imposible (edad < 0 o > 120 años); edad vacía |
 | `flag_sin_triaje` | 6112 (0.79 %) | sin nivel de triaje registrado |
 | `flag_triaje_incoherente` | 1143 (0.15 %) | triaje antes de la llegada o después de la salida |
 | `flag_estancia_larga` | 1064 (0.14 %) | más de 72 h en urgencias |
@@ -24,7 +25,8 @@
 | `flag_sin_diagnostico` | 42850 (5.50 %) | sin diagnóstico principal codificado |
 
 - Fechas no válidas convertidas a nulo: {'fecha_triaje': 344}
-- Edades incoherentes con la fecha de nacimiento (>1 año): 0
+- Edades del fichero incoherentes con la fecha de nacimiento (>1 año): 0
+- `edad` = años cumplidos el día de la llegada (entero). Episodios en los que no coincide con la parte entera de la edad decimal del fichero (por redondeo a 2 decimales): 3022
 
 ## Columnas descartadas
 
@@ -35,11 +37,11 @@
 - `resp_acl`: identificador del profesional; no aporta a la predicción
 - `resp_alta`: identificador del profesional; no aporta a la predicción
 - `tipo_acto`: valor constante ('URGENCIAS')
-- `f_nacimiento`: dato personal redundante con `edad` (se verifica antes la coherencia)
+- `f_nacimiento`: dato personal; solo se usa para calcular `edad` (años cumplidos el día de la llegada)
 
 ## Resultado
 
-- `episodios_limpios.parquet`: **778,472** episodios × 34 columnas
+- `episodios_limpios.parquet`: **778,472** episodios × 35 columnas
 - `codificacion_limpia.parquet`: **3,816,119** filas
 - Episodios con diagnóstico principal: 94.5 %
 
@@ -47,9 +49,9 @@
 
 | area   |   episodios |
 |:-------|------------:|
-| GEN    |      562631 |
-| PED    |      157135 |
-| GIN    |       58706 |
+| GEN    |      562603 |
+| PED    |      157165 |
+| GIN    |       58704 |
 
 ### Reparto por nivel de triaje (1 = crítico … 5 = no urgente)
 
