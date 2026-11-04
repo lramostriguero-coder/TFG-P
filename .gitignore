@@ -1,2 +1,8 @@
 __pycache__/
 *.pyc
+
+# Datos de pacientes: nunca se suben al repositorio
+datos/*
+# Excepción: datos públicos externos (meteorología)
+!datos/externos/
+.venv/
