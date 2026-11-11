@@ -74,3 +74,61 @@ El anteproyecto dice que "se estudiará si [las variables exógenas] permiten ap
 
 - La numeración de los pasos de la Fase 1 (1, 2, 7 y 8) confunde porque no hay pasos 3 a 6. Hay que renumerarlos o explicar por qué se saltan.
 - `requirements.txt` solo pone versiones mínimas (`>=`). Conviene fijar las versiones exactas con las que se ha trabajado, para que los resultados se puedan reproducir.
+
+---
+
+## 6. Qué se puede hacer fuera del anteproyecto: orden lógico
+
+El anteproyecto es un esqueleto. **Se pueden hacer cosas que no aparecen en él**, siempre que:
+
+- cada paso tenga **un motivo** (una pregunta concreta que responde);
+- siga **un orden lógico**: de lo más sencillo a lo más complejo, y cada modelo se compara con el anterior;
+- quede **documentado** el porqué y el resultado.
+
+Lo que no se hace es añadir variables, pruebas o métodos "por si acaso", sin una pregunta detrás.
+
+Esto sustituye a la regla 1 de `CONTEXTO_TFG.md` ("ceñirse al anteproyecto"), que hay que actualizar.
+
+**Orden de la Fase 2:**
+
+1. **Baselines**: persistencia (mañana = hoy) y naïve estacional semanal (mismo día de la semana anterior). Son la nota mínima que hay que superar.
+2. **ARIMA → SARIMA → SARIMAX**, con el estudio de días anteriores del punto 7.
+3. **Estudio de relevancia de exógenas** (punto 3), empezando en SARIMAX.
+4. **Ensembles de árboles** (árbol de decisión, XGBoost).
+5. **Redes neuronales**: tradicionales y profundas.
+
+En cada familia se usan las mismas particiones, las mismas métricas, los horizontes de 1 a 7 días y se compara con los baselines.
+
+---
+
+## 7. ARIMA, SARIMA y SARIMAX: qué días anteriores usar
+
+**Objetivo:** que se vea, y se analice, que **la elección de los días anteriores que usa el modelo cambia la predicción**.
+
+Se prueban, como mínimo, estas configuraciones:
+
+| Configuración | Días que usa para predecir el día *t* | Cómo se pone en el modelo |
+|---|---|---|
+| Día anterior | *t−1* | ARIMA con p = 1 |
+| 3 días anteriores | *t−1 … t−3* | ARIMA con p = 3 |
+| 7 días anteriores (la semana anterior completa) | *t−1 … t−7* | ARIMA con p = 7 |
+| 14 días anteriores | *t−1 … t−14* | ARIMA con p = 14 |
+| Mismo día de la semana anterior | *t−7* | SARIMA con estacionalidad 7 y P = 1 |
+| Mismo día de la semana de las 2 semanas anteriores | *t−7* y *t−14* | SARIMA con estacionalidad 7 y P = 2 |
+| Semana anterior + mismo día de la semana de las 2 semanas anteriores | *t−1 … t−7* y *t−14* | SARIMA con p = 7, s = 7, P = 2 |
+| Semana anterior + mismo día de la semana del año anterior | *t−1 … t−7* y *t−364* | SARIMAX con p = 7 y la llegada de *t−364* como regresor |
+| … otras combinaciones que salgan del análisis | | |
+
+Notas:
+
+- **"Mismo día del año anterior" = *t−364*** (52 semanas exactas), no *t−365*. Así se compara un lunes con un lunes.
+- **Usar *t−364* tiene un coste:** el primer año de entrenamiento (2022) no tiene año anterior. El modelo que lo usa solo puede aprender con 2023, es decir, con la mitad de los datos. Hay que tenerlo en cuenta al comparar.
+- SARIMAX admite huecos (`NaN`) en las llegadas, pero **no en los regresores**. Los días cuyo *t−364* cae en uno de los 3 días faltantes (punto 1) necesitan una solución, y hay que documentarla.
+- Además de los días anteriores, en cada configuración se decide la diferenciación (d, D) y, si hace falta, el número de términos de media móvil (q, Q).
+
+**Qué hay que analizar en cada configuración:**
+
+- El error en validación **para cada horizonte** (1 a 7 días), comparado con los baselines.
+- **Qué días ayudan y a qué horizonte.** Por ejemplo, ¿*t−1* ayuda a 1 día y deja de ayudar a 7? ¿El mismo día de la semana pesa más que los días seguidos?
+- Si añadir más días mejora o solo complica el modelo (estabilidad, criterios AIC/BIC).
+- Una tabla resumen y una gráfica de error por horizonte, con una conclusión escrita.
