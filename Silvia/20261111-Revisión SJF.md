@@ -5,7 +5,42 @@ En general, los pasos son adecuados y siguen el orden del anteproyecto. Abajo es
 
 ---
 
-## 1. Días incompletos: se tratan como dato faltante, sin imputación
+## 1. División del conjunto de datos
+
+La división es siempre **cronológica**: el entrenamiento va primero, después la validación y por último el test. Nunca se mezclan días de distintos periodos.
+
+Criterio: entrenamiento y validación en una proporción de **70/30, con un máximo del 30 % para validación**, y **años completos** en cada partición. Con años completos, la validación recorre todas las estaciones una vez (gripe de invierno, verano, Navidad…). Esto es importante porque **los primeros días de enero suelen ser los más difíciles de predecir**, y así quedan siempre dentro de la validación y del test.
+
+**Propuesta A (la preferida): test con 2026**
+
+| Partición | Periodo | Días | % (entrenamiento + validación) |
+|---|---|---|---|
+| Entrenamiento | 2022 – 2024 | 1.096 | 75 % |
+| Validación | 2025 | 365 | 25 % |
+| Test | 2026 (cuando lleguen los datos) | — | — |
+
+**Propuesta B (si no llegan datos de 2026): test con 2025 completo**
+
+| Partición | Periodo | Días | % (entrenamiento + validación) |
+|---|---|---|---|
+| Entrenamiento | 2022 – 2023 | 730 | 67 % |
+| Validación | 2024 | 366 | 33 % |
+| Test | 2025 | 365 | — |
+
+En la propuesta B, la validación supera ligeramente el 30 %. Se acepta para mantener años completos: un corte exacto 70/30 empezaría la validación el 07/02/2024 y dejaría fuera el mes de enero.
+
+**En las dos propuestas:**
+
+- El mínimo y el máximo de la normalización (paso 8) se calculan **solo con el entrenamiento** de la propuesta que se use.
+- El test se usa **una sola vez**, al final.
+- Se puede comparar con el sistema actual del hospital (sus predicciones van de septiembre de 2024 a mayo de 2026) sobre el periodo de test.
+- Además del error global, hay que mirar aparte cómo predice cada modelo **los primeros días de enero**.
+
+**Qué tiene que hacer Paula:** preparar los pasos 2 y 8 para que la división se pueda cambiar de A a B sin tocar el código (por ejemplo, con un parámetro). Mientras no lleguen los datos de 2026, trabajar con entrenamiento y validación de la propuesta A sin evaluar en test.
+
+---
+
+## 2. Días incompletos: se tratan como dato faltante, sin imputación
 
 **Qué pasa.** Los días 14/04/2023, 16/06/2023 y 31/12/2025 se dejó de registrar información a mitad del día. El número de llegadas de esos días **no es un dato real** y usarlo sería conceptualmente incorrecto.
 
@@ -29,7 +64,7 @@ En general, los pasos son adecuados y siguen el orden del anteproyecto. Abajo es
 
 ---
 
-## 2. Meteorología: no usar el tiempo real del día que se predice
+## 3. Meteorología: no usar el tiempo real del día que se predice
 
 **Situación actual.** Todavía no hay ningún modelo. En `dataset_fase1.csv` cada día lleva la meteorología **observada** de ese mismo día (reanálisis ERA5 de Open-Meteo). **No es una previsión del tiempo**: es lo que realmente pasó.
 
@@ -44,14 +79,14 @@ En general, los pasos son adecuados y siguen el orden del anteproyecto. Abajo es
 
 ---
 
-## 3. Estudio de relevancia de las variables exógenas
+## 4. Estudio de relevancia de las variables exógenas
 
 El anteproyecto dice que "se estudiará si [las variables exógenas] permiten aportar información relevante para la predicción". Así que sí hay que hacerlo, en la Fase 2.
 
 **Decisión: se hace comparando los resultados del modelo con y sin exógenas** (en inglés, *estudio de ablación*):
 
 - Mismo modelo, mismas particiones y mismas métricas. Lo único que cambia es el conjunto de variables de entrada.
-- La comparación se hace en **validación (2024)**. El test (2025) se usa una sola vez, al final.
+- La comparación se hace en **validación**. El test se usa una sola vez, al final (punto 1).
 - Se compara por **grupos**, no variable a variable, para no multiplicar las combinaciones:
   1. sin exógenas (solo la propia serie de llegadas);
   2. \+ calendario;
@@ -62,7 +97,7 @@ El anteproyecto dice que "se estudiará si [las variables exógenas] permiten ap
 
 ---
 
-## 4. Decisiones sobre los episodios y las áreas
+## 5. Decisiones sobre los episodios y las áreas
 
 - **Los episodios marcados se cuentan como llegadas.** Episodios sin triaje, con triaje incoherente, con estancia de más de 72 h o sin diagnóstico: todos son personas que llegaron a urgencias. No sabemos si se fueron sin hacer el triaje o si no se guardó el resultado, pero en cualquier caso **llegaron**. Las marcas `flag_*` se mantienen solo para documentar la calidad del dato.
 - **Corte de Pediatría:** **menos de 16 años → PED**; **16 años o más → GEN** (o GIN si corresponde). La edad es la de los años cumplidos el día de la llegada. Este criterio queda **fijado para este trabajo**, sin consultarlo al hospital.
@@ -70,7 +105,7 @@ El anteproyecto dice que "se estudiará si [las variables exógenas] permiten ap
 
 ---
 
-## 5. Qué se puede hacer fuera del anteproyecto: orden lógico
+## 6. Qué se puede hacer fuera del anteproyecto: orden lógico
 
 El anteproyecto es un esqueleto. **Se pueden hacer cosas que no aparecen en él**, siempre que:
 
@@ -85,8 +120,8 @@ Esto sustituye a la regla 1 de `CONTEXTO_TFG.md` ("ceñirse al anteproyecto"), q
 **Orden de la Fase 2:**
 
 1. **Baselines**: persistencia (mañana = hoy) y naïve estacional semanal (mismo día de la semana anterior). Son la nota mínima que hay que superar.
-2. **ARIMA → SARIMA → SARIMAX**, con el estudio de días anteriores del punto 6.
-3. **Estudio de relevancia de exógenas** (punto 3), empezando en SARIMAX.
+2. **ARIMA → SARIMA → SARIMAX**, con el estudio de días anteriores del punto 7.
+3. **Estudio de relevancia de exógenas** (punto 4), empezando en SARIMAX.
 4. **Ensembles de árboles** (árbol de decisión, XGBoost).
 5. **Redes neuronales**: tradicionales y profundas.
 
@@ -94,7 +129,7 @@ En cada familia se usan las mismas particiones, las mismas métricas, los horizo
 
 ---
 
-## 6. ARIMA, SARIMA y SARIMAX: qué días anteriores usar
+## 7. ARIMA, SARIMA y SARIMAX: qué días anteriores usar
 
 **Objetivo:** que se vea, y se analice, que **la elección de los días anteriores que usa el modelo cambia la predicción**.
 
@@ -114,7 +149,7 @@ Configuraciones que hay que probar, como mínimo:
 - Cómo se traduce cada configuración a cada modelo (ARIMA, SARIMA o SARIMAX) y a sus parámetros.
 - Qué significa exactamente "el mismo día de la semana del año anterior" y cómo se calcula.
 - Qué consecuencias tiene cada configuración sobre los datos disponibles para entrenar.
-- Cómo afectan a cada configuración los 3 días en blanco del punto 1.
+- Cómo afectan a cada configuración los 3 días en blanco del punto 2.
 
 **Qué hay que analizar:**
 
