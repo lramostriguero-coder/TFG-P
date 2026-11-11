@@ -113,7 +113,7 @@ Salida: `datos/procesados/dataset_fase1.csv`.
 
 ### Excel de la Fase 1
 
-En `C:\PAULA\UNI\TFG\Datos_urgencias\FASE1` hay dos Excel con las fórmulas visibles: `datos_urgencias_fase1.xlsx` (unificación, errores, serie diaria y resumen) y `variables_exogenas_y_normalizadas_fase1.xlsx` (leyenda, variables exógenas, datos de entrenamiento, parámetros de normalización, normalización, festivos y calendario escolar). **Están desactualizados:** todavía tienen 1.458 días (sin los 3 incompletos) y la división antigua (entrenamiento 2022–2023). Hay que pasarlos a 1.461 días con esos 3 días en blanco y a la división A. Si se modifica, cerrarlo antes en Excel para no perder cambios.
+En `C:\PAULA\UNI\TFG\Datos_urgencias\FASE1` hay dos Excel con las fórmulas visibles: `datos_urgencias_fase1.xlsx` (unificación, errores, serie diaria y resumen) y `variables_exogenas_y_normalizadas_fase1.xlsx` (leyenda, variables exógenas, datos de entrenamiento, parámetros de normalización, normalización, festivos y calendario escolar). Actualizados el 11/11/2026: **1.461 días**, los 3 días incompletos con llegadas y salidas en blanco (columna «Nota»), partición de la división A (fórmula con las fechas de corte) y «Datos entrenamiento» con 2022–2024. Las fórmulas que leen las llegadas devuelven vacío en los días en blanco, para que Excel no los tome como 0. Coinciden con Python (diferencias < 0,0001 por el redondeo) y no tienen errores de fórmula. Copia previa en `FASE1\copia_antes_revision_20261111\`. Si se pasa a la división B, hay que cambiar las fechas de la fórmula de partición y el rango de «Datos entrenamiento». Si se modifica, cerrarlo antes en Excel para no perder cambios.
 
 ## 4. Fase 2 — Modelos de predicción (siguiente)
 
@@ -158,7 +158,7 @@ Los resultados se guardan en `datos/procesados/` (no se suben a GitHub).
 - [x] Normalización min-max en el paso 8.
 - [x] Unir la rama `fase1-paso1-ingesta` a `main` (lramostriguero-coder/TFG-P#1, 04/11/2026).
 - [x] Revisión de la tutora del 11/11/2026 (`Silvia/20261111-Revisión SJF.md`): 3 días incompletos en blanco (`NaN`) en lugar de borrados, 1.461 días, división A/B con el parámetro `DIVISION` (puesta la A).
-- [ ] Actualizar los dos Excel de la Fase 1 a 1.461 días con los 3 días en blanco y la división A.
+- [x] Los dos Excel de la Fase 1 con 1.461 días, los 3 días en blanco y la división A (11/11/2026).
 - [ ] Ver si hay previsiones meteorológicas históricas fiables para 2022–2025.
 - [ ] Datos de 2026 (los busca la tutora) para el test de la división A. Si no llegan, pasar a la división B.
 - [ ] Empezar la Fase 2 por los baselines.

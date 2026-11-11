@@ -175,7 +175,7 @@ El código está en GitHub; los datos de pacientes y los Excel solo en el equipo
 | Excel de la serie | Misma carpeta | `datos_urgencias_fase1.xlsx`: unificación de campos, errores detectados, serie diaria y resumen |
 | Excel de variables | Misma carpeta | `variables_exogenas_y_normalizadas_fase1.xlsx`: leyenda, variables exógenas, parámetros y normalización con fórmulas `MIN`/`MAX` visibles |
 
-**Los Excel están pendientes de actualizar** a la revisión del 11/11/2026: todavía tienen 1.458 días y la división antigua (entrenamiento 2022–2023). Hasta esa revisión coincidían con Python (diferencias menores de 0,0001 por redondeo) y no tenían errores de fórmula. Hay copias de seguridad de los Excel anteriores en `FASE1\copia_antes_eliminar_incompletos` y `FASE1\copia_antes_edad_entera`.
+Los Excel están actualizados a la revisión del 11/11/2026 (1.461 días, los 3 días incompletos en blanco y división A), coinciden con Python (diferencias menores de 0,0001 por redondeo) y no tienen errores de fórmula. En los días en blanco, las fórmulas de normalización devuelven vacío, para que Excel no tome la celda como 0. Hay copias de seguridad de los Excel anteriores en `FASE1\copia_antes_revision_20261111`, `FASE1\copia_antes_eliminar_incompletos` y `FASE1\copia_antes_edad_entera`.
 
 Para repetir todo el proceso (Python 3.12):
 
@@ -204,7 +204,6 @@ python tfg/fase1_paso8_normalizacion.py
 
 Siguientes pasos:
 
-- [ ] Actualizar los Excel de la Fase 1 a 1.461 días con los 3 días en blanco y la división A.
 - [ ] Explicar en la memoria los 3 días en blanco y por qué no se imputan.
 - [ ] Fase 2 · Baselines: persistencia (mañana = hoy) y naïve estacional semanal (mismo día de la semana anterior).
 - [ ] Fase 2 · ARIMA → SARIMA → SARIMAX, con el estudio de qué días anteriores usar.
