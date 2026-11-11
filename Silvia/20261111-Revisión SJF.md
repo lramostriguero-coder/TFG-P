@@ -132,21 +132,10 @@ En cada familia se usan las mismas particiones, las mismas métricas, los horizo
 
 **Objetivo:** que se vea, y se analice, que **la elección de los días anteriores que usa el modelo cambia la predicción**.
 
-Configuraciones que hay que probar, como mínimo:
-
-- el día anterior;
-- los 3 días anteriores;
-- los 7 días anteriores (la semana anterior);
-- los 14 días anteriores;
-- el mismo día de la semana (lunes, martes…) de la semana anterior;
-- el mismo día de la semana de las dos semanas anteriores;
-- la semana anterior + el mismo día de la semana del año anterior;
-- … y las combinaciones que vayan saliendo del análisis.
-
 **Lo que tiene que pensar y decidir Paula** (dejando escrito el razonamiento):
 
+- Qué configuraciones de días anteriores tiene sentido probar y por qué.
 - Cómo se traduce cada configuración a cada modelo (ARIMA, SARIMA o SARIMAX) y a sus parámetros.
-- Qué significa exactamente "el mismo día de la semana del año anterior" y cómo se calcula.
 - Qué consecuencias tiene cada configuración sobre los datos disponibles para entrenar.
 - Cómo afectan a cada configuración los 3 días en blanco del punto 2.
 
