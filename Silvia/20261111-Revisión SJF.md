@@ -9,7 +9,7 @@ En general, los pasos son adecuados y siguen el orden del anteproyecto. Abajo es
 
 La división es siempre **cronológica**: el entrenamiento va primero, después la validación y por último el test. Nunca se mezclan días de distintos periodos.
 
-Criterio: entrenamiento y validación en una proporción de **70/30, con un máximo del 30 % para validación**, y **años completos** en cada partición. Con años completos, la validación recorre todas las estaciones una vez (gripe de invierno, verano, Navidad…). Esto es importante porque **los primeros días de enero suelen ser los más difíciles de predecir**, y así quedan siempre dentro de la validación y del test.
+Criterio: entrenamiento y validación en una proporción de **70/30, con un máximo del 30 % para validación**, y **años completos** en cada partición. Con años completos, la validación recorre todas las estaciones una vez (gripe de invierno, verano, Navidad…).
 
 **Propuesta A (la preferida): test con 2026**
 
@@ -27,16 +27,15 @@ Criterio: entrenamiento y validación en una proporción de **70/30, con un máx
 | Validación | 2024 | 366 | 33 % |
 | Test | 2025 | 365 | — |
 
-En la propuesta B, la validación supera ligeramente el 30 %. Se acepta para mantener años completos: un corte exacto 70/30 empezaría la validación el 07/02/2024 y dejaría fuera el mes de enero.
+En la propuesta B, la validación supera ligeramente el 30 %. Se acepta para mantener años completos: con un corte exacto 70/30, la validación empezaría el 07/02/2024 y no recorrería un año entero.
 
 **En las dos propuestas:**
 
 - El mínimo y el máximo de la normalización (paso 8) se calculan **solo con el entrenamiento** de la propuesta que se use.
 - El test se usa **una sola vez**, al final.
 - Se puede comparar con el sistema actual del hospital (sus predicciones van de septiembre de 2024 a mayo de 2026) sobre el periodo de test.
-- Además del error global, hay que mirar aparte cómo predice cada modelo **los primeros días de enero**.
 
-**Qué tiene que hacer Paula:** preparar los pasos 2 y 8 para que la división se pueda cambiar de A a B sin tocar el código (por ejemplo, con un parámetro). Mientras no lleguen los datos de 2026, trabajar con entrenamiento y validación de la propuesta A sin evaluar en test.
+**Qué tiene que hacer Paula:** preparar los pasos 2 y 8 para que la división se pueda cambiar de A a B sin tocar el código (por ejemplo, con un parámetro).
 
 ---
 
