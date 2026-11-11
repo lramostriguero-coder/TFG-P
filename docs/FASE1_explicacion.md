@@ -1,22 +1,22 @@
 # TFG · Fase 1: construcción de la base de datos entrenable
 
-Fecha: 04/11/2026 · Versión editable: [documento en Claude](https://claude.ai/artifact/JT7AE7TU8PNLBws2Cmt87Z)
+Fecha: 04/11/2026 · Actualizado el 11/11/2026 con la revisión de la tutora (`Silvia/20261111-Revisión SJF.md`) · Versión editable (del 04/11/2026): [documento en Claude](https://claude.ai/artifact/JT7AE7TU8PNLBws2Cmt87Z)
 
 ## Introducción
 
-La Fase 1 está terminada: a partir de los datos crudos del hospital se ha construido una serie diaria de **1.458 días** (2022–2025), con variables de calendario y meteorología, normalizada y dividida en entrenamiento, validación y test.
+La Fase 1 está terminada: a partir de los datos crudos del hospital se ha construido una serie diaria continua de **1.461 días** (2022–2025), con variables de calendario y meteorología, normalizada y dividida cronológicamente en entrenamiento, validación y test.
 
 El TFG, *Predicción de la demanda diaria de urgencias hospitalarias mediante modelos de aprendizaje automático* (alumna: Paula Fernández Sánchez; tutora: Silvia Jiménez Fernández; cotutor: Alberto Palomo Alonso), busca predecir las llegadas diarias a urgencias con 1 a 7 días de antelación. Este documento explica, paso a paso, qué se ha hecho en la Fase 1 y por qué.
 
 Reglas de trabajo seguidas:
 
-- **Ceñirse al anteproyecto**: no se añaden variables, pruebas ni métodos que no aparezcan en él. Lo que el anteproyecto no fija se consulta antes.
+- **El anteproyecto es el esqueleto**: se pueden hacer cosas que no aparecen en él si tienen un motivo (una pregunta concreta), siguen un orden lógico y quedan documentadas. No se añade nada «por si acaso».
 - **Separar fuentes oficiales de criterio propio**, y dejar escrita cada decisión.
 - **Los datos de pacientes nunca se suben a GitHub.**
 
 ## Datos de partida
 
-Se trabaja solo con los ficheros entregados por el hospital: no va a llegar ningún dato más. Son volcados de phpMyAdmin (sentencias `INSERT INTO`) que se leen con Python sin instalar una base de datos.
+Se trabaja con los ficheros entregados por el hospital (la tutora está buscando datos de 2026). Son volcados de phpMyAdmin (sentencias `INSERT INTO`) que se leen con Python sin instalar una base de datos.
 
 | Fichero | Qué contiene | Tamaño |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ Por indicación de la tutora, **el número real de llegadas se obtiene contando 
 Se unen los 4 años de episodios y de codificación, se revisan duplicados y errores, y se unifica el formato de cada campo. Los registros con problemas **se marcan, no se borran**. Script: `tfg/fase1_paso1_ingesta.py`.
 
 1. **Duplicados.** No hay episodios repetidos ni códigos repetidos. Había un caso con el mismo episodio y orden pero códigos distintos: no es un duplicado y se conserva (al principio el script lo borraba por error; se corrigió).
-2. **Marcas de calidad.** Cada problema se señala con una columna `flag_*` (unos 6,4 % de los episodios tienen alguna):
+2. **Marcas de calidad.** Cada problema se señala con una columna `flag_*` (unos 6,4 % de los episodios tienen alguna). **Todos estos episodios se cuentan como llegadas**: son personas que llegaron a urgencias, aunque no se sepa si se fueron sin triaje o si no se guardó el resultado. Las marcas solo documentan la calidad del dato.
 
 | Marca | Episodios | Qué significa |
 | --- | --- | --- |
@@ -54,6 +54,8 @@ Se unen los 4 años de episodios y de codificación, se revisan duplicados y err
    - **PED** si el paciente tiene menos de 16 años ese día.
    - Si no, **GIN** si el servicio es Urgencias Ginecológicas, Urgencias Obstétricas u Obstetricia.
    - El resto, **GEN**.
+
+   La edad tiene prioridad sobre el servicio: una paciente de menos de 16 años atendida en Ginecología u Obstetricia cuenta como PED. Este corte queda fijado para este trabajo, sin consultarlo al hospital.
 6. **Columnas descartadas:** `fuente`, `resp_final`, `resp_ing` y `fecha_ing` (vacías), `resp_acl` y `resp_alta` (identifican al profesional), `tipo_acto` (siempre «URGENCIAS») y `f_nacimiento` (dato personal, solo se usa para calcular la edad).
 
 Resultado: 778.472 episodios limpios (157.165 PED, 58.704 GIN y 562.603 GEN) y el informe `informes/fase1_paso1_calidad.md`.
@@ -63,34 +65,54 @@ Resultado: 778.472 episodios limpios (157.165 PED, 58.704 GIN y 562.603 GEN) y e
 Se cuentan los episodios de cada día por su fecha de llegada, en total y por área, y cada día se asigna a una partición cronológica. Script: `tfg/fase1_paso2_serie_diaria.py`.
 
 - **Columnas:** `llegadas` (lo que se va a predecir), `llegadas_PED`, `llegadas_GIN` y `llegadas_GEN` (suman `llegadas`), `salidas` (solo como referencia) y `particion`.
-- **Calendario completo:** se construyen los 1.461 días del 01/01/2022 al 31/12/2025, incluso si un día no tuviera episodios.
+- **Calendario completo:** los 1.461 días del 01/01/2022 al 31/12/2025, sin huecos, incluso si un día no tuviera episodios.
 
-| Partición | Periodo | Días | Llegadas/día (media) | Mínimo | Máximo |
+### División del conjunto de datos
+
+La división es siempre **cronológica** (entrenamiento, después validación y por último test, sin mezclar días) y con **años completos**, para que la validación recorra todas las estaciones una vez. Entre entrenamiento y validación, como máximo un 30 % para validación. Se elige con el parámetro `DIVISION` del paso 2, sin tocar el resto del código.
+
+| División | Entrenamiento | Validación | Test |
+| --- | --- | --- | --- |
+| **A** (la preferida, la que está puesta) | 2022–2024 · 1.096 días (75 %) | 2025 · 365 días (25 %) | 2026, cuando lleguen los datos |
+| **B** (si no llegan datos de 2026) | 2022–2023 · 730 días (67 %) | 2024 · 366 días (33 %) | 2025 · 365 días |
+
+En la B la validación pasa un poco del 30 %; se acepta para mantener años completos (con un corte exacto 70/30 la validación empezaría el 07/02/2024 y no recorrería un año entero).
+
+Con la división A, sin contar los días en blanco:
+
+| Partición | Periodo | Días con dato | Llegadas/día (media) | Mínimo | Máximo |
 | --- | --- | --- | --- | --- | --- |
-| Entrenamiento | 2022–2023 | 728 | 523,7 | 364 | 735 |
-| Validación | 2024 | 366 | 538,1 | 385 | 687 |
-| Test | 2025 | 364 | 547,9 | 417 | 723 |
+| Entrenamiento | 2022–2024 | 1.094 | 528,5 | 364 | 735 |
+| Validación | 2025 | 364 | 547,9 | 417 | 723 |
 
-El modelo aprende con entrenamiento, la configuración se elige en validación y test se usa **una sola vez**, al final.
+El modelo aprende con entrenamiento, la configuración se elige en validación y test se usa **una sola vez**, al final. Sobre el test se puede comparar también con el sistema actual del hospital.
 
-### Días incompletos eliminados
+### Días incompletos: dato faltante, sin imputación
 
-Al revisar las salidas por hora aparecieron 3 días con registros perdidos. **Por decisión de la tutora, se eliminan de la serie**, que queda con 1.458 días:
+Al revisar las salidas por hora aparecieron 3 días con registros perdidos: se dejó de registrar información a mitad del día, así que su número de llegadas **no es un dato real**.
 
-| Día | Partición | Llegadas registradas | Problema |
+| Día | Partición (división A) | Llegadas registradas | Problema |
 | --- | --- | --- | --- |
 | 14/04/2023 | Entrenamiento | 174 | Casi no hay salidas en todo el día (90 de unas 500) |
 | 16/06/2023 | Entrenamiento | 248 | Ninguna salida de 14:00 a 23:59 |
-| 31/12/2025 | Test | 366 | Faltan los pacientes que salieron en 2026 (no hay fichero de 2026) |
+| 31/12/2025 | Validación | 366 | Faltan los pacientes que salieron en 2026 (no hay fichero de 2026) |
 
-![Llegadas diarias a urgencias 2022–2025 con las particiones y los 3 días incompletos eliminados](../informes/fase1_paso2_serie_diaria.png)
+Se tratan como **valores faltantes** (*missing values*, `NaN`), **sin imputación**:
 
-Llegadas por día de 2022 a 2025, con la media móvil de 28 días en negro; en rojo, los 3 días incompletos que se han eliminado.
+- Los 3 días se quedan en la serie, que mantiene los 1.461 días sin huecos, como pide el anteproyecto.
+- `llegadas`, `llegadas_PED`, `llegadas_GIN`, `llegadas_GEN` y `salidas` van **en blanco**. No se rellenan con ningún valor estimado (ni el día anterior, ni la semana anterior, ni el año anterior, ni medias): sería meter ruido inventado.
+- Las variables de calendario y de meteorología de esos días sí están rellenas, porque son correctas.
 
-Dos consecuencias que conviene recoger en la memoria:
+![Llegadas diarias a urgencias 2022–2025 con las particiones de la división A y los 3 días incompletos](../informes/fase1_paso2_serie_diaria.png)
 
-- El anteproyecto pide una serie «sin discontinuidades en el calendario»; ahora tiene 3 huecos de un día, por decisión de la tutora.
-- En la Fase 2, los valores de días anteriores (el día de antes, el mismo día de la semana anterior) se buscarán **por fecha**, no por la fila de arriba, para no saltarse un hueco.
+Llegadas por día de 2022 a 2025, con la media móvil de 28 días en negro. La línea se corta en los 3 días incompletos; en rojo, lo que se llegó a registrar esos días, que no se usa.
+
+Cómo los gestionan los modelos en la Fase 2:
+
+- Al **entrenar**, esos días no se usan como objetivo, y al **evaluar** no se puntúan: no hay valor real.
+- Si un día en blanco hace falta como entrada (por ejemplo, el «día anterior»), esa entrada queda en blanco. SARIMAX (filtro de Kalman) y XGBoost lo admiten; en los modelos que no, se descarta esa muestra y se indica cuántas se han descartado.
+
+Al principio esos días se borraban y la serie tenía 1.458 días; se cambió en la revisión del 11/11/2026.
 
 ## Paso 7 · Variables exógenas
 
@@ -106,11 +128,13 @@ A cada día se le añaden variables de calendario y de meteorología, todas de f
 | `precipitacion` | Lluvia del día (mm) | Open-Meteo |
 | `humedad` | Humedad relativa media (%) | Open-Meteo |
 
-No se incluyen las fiestas locales, porque los pacientes vienen de muchos municipios distintos. También se quitaron, por no estar en el anteproyecto, variables de criterio propio (puentes, vísperas, post-festivos, Nochebuena y Nochevieja, calor extremo) y pruebas estadísticas de relevancia. **La selección de variables se hará en la Fase 2**, comparando en validación modelos con distintos conjuntos.
+No se incluyen las fiestas locales, porque los pacientes vienen de muchos municipios distintos. También se quitaron variables de criterio propio sin una pregunta detrás (puentes, vísperas, post-festivos, Nochebuena y Nochevieja, calor extremo) y pruebas estadísticas de relevancia. **La relevancia de las exógenas se estudiará en la Fase 2**, comparando en validación el mismo modelo con y sin ellas, por grupos (sin exógenas, + calendario, + meteorología, + las dos) y en cada horizonte.
+
+**Cuidado con la meteorología.** Es la **observada** de cada día (reanálisis), no una previsión. Como se predice al final del día *t* para los días *t+1 … t+7*, solo se puede usar como entrada la meteorología **hasta el día *t***; usar la de los días que se predicen sería usar información que no se conoce en ese momento, y los resultados saldrían mejores que en la realidad. El calendario de los días que se predicen sí se puede usar, porque se conoce de antemano. Para usar previsiones del tiempo harían falta previsiones históricas reales de 2022–2025 (pendiente de ver si hay una fuente fiable).
 
 ## Paso 8 · Normalización
 
-Las variables continuas se normalizan con **min-max**, con el mínimo y el máximo calculados **solo con los 728 días de entrenamiento**. Script: `tfg/fase1_paso8_normalizacion.py`.
+Las variables continuas se normalizan con **min-max**, con el mínimo y el máximo calculados **solo con el entrenamiento** de la división elegida (división A: 2022–2024). Los días en blanco no cuentan para el mínimo ni el máximo, y siguen en blanco después de normalizar. Script: `tfg/fase1_paso8_normalizacion.py`.
 
 ```
 valor normalizado = (valor − mínimo de entrenamiento) / (máximo de entrenamiento − mínimo de entrenamiento)
@@ -125,14 +149,14 @@ Por qué se normaliza: las variables tienen escalas muy distintas (unas 500 lleg
 | Llegadas GIN | 16 | 68 |
 | Llegadas GEN | 280 | 542 |
 | Temperatura máxima (°C) | 5,5 | 40,6 |
-| Temperatura mínima (°C) | −5,5 | 25,4 |
+| Temperatura mínima (°C) | −5,5 | 25,6 |
 | Temperatura media (°C) | 0,6 | 33,3 |
 | Precipitación (mm) | 0 | 77,5 |
-| Humedad (%) | 17 | 97 |
+| Humedad (%) | 17 | 98 |
 
 Ejemplo, 01/01/2022: (521 − 364) / (735 − 364) = **0,423**.
 
-- **Sin fuga de datos:** validación y test no intervienen en el cálculo del mínimo y el máximo. Sí se les aplica la misma fórmula con esos valores, para que el modelo reciba los datos en la escala con la que aprendió. Por eso algún día de 2024 o 2025 queda un poco fuera de 0–1 (por ejemplo, Pediatría −0,125 o Ginecología 1,058 en test).
+- **Sin fuga de datos:** validación y test no intervienen en el cálculo del mínimo y el máximo. Sí se les aplica la misma fórmula con esos valores, para que el modelo reciba los datos en la escala con la que aprendió. Por eso algún día de validación (2025) queda un poco fuera de 0–1 (por ejemplo, Pediatría −0,125, Ginecología 1,058 o temperatura máxima −0,043).
 - **Variables cíclicas** (`dia_semana`, `mes`, `dia_anio`): se pasan a seno y coseno, con periodos 7, 12 y 365,25, para que el domingo quede junto al lunes y diciembre junto a enero.
 - **Variables binarias** (`fin_de_semana`, `festivo`, `vacaciones_escolares`, `dia_lectivo`): se dejan como 0/1.
 - Los parámetros se guardan para deshacer la normalización de las predicciones y volver a pacientes por día.
@@ -151,7 +175,7 @@ El código está en GitHub; los datos de pacientes y los Excel solo en el equipo
 | Excel de la serie | Misma carpeta | `datos_urgencias_fase1.xlsx`: unificación de campos, errores detectados, serie diaria y resumen |
 | Excel de variables | Misma carpeta | `variables_exogenas_y_normalizadas_fase1.xlsx`: leyenda, variables exógenas, parámetros y normalización con fórmulas `MIN`/`MAX` visibles |
 
-Los Excel coinciden con Python (diferencias menores de 0,0001 por redondeo) y no tienen errores de fórmula. Hay copias de seguridad de los Excel anteriores en `FASE1\copia_antes_eliminar_incompletos` y `FASE1\copia_antes_edad_entera`.
+**Los Excel están pendientes de actualizar** a la revisión del 11/11/2026: todavía tienen 1.458 días y la división antigua (entrenamiento 2022–2023). Hasta esa revisión coincidían con Python (diferencias menores de 0,0001 por redondeo) y no tenían errores de fórmula. Hay copias de seguridad de los Excel anteriores en `FASE1\copia_antes_eliminar_incompletos` y `FASE1\copia_antes_edad_entera`.
 
 Para repetir todo el proceso (Python 3.12):
 
@@ -169,15 +193,21 @@ python tfg/fase1_paso8_normalizacion.py
 | --- | --- | --- |
 | Las llegadas se cuentan por `fecha_inicio` | Tutora | Es el número real de pacientes que llegan cada día |
 | Los registros con problemas se marcan, no se borran | Criterio del trabajo | No perder información y poder decidir después qué hacer con ellos |
-| Se eliminan los 3 días incompletos | Tutora | Tienen registros perdidos y distorsionarían el entrenamiento y la evaluación |
+| Los episodios con marcas de calidad se cuentan como llegadas | Tutora | Son personas que llegaron a urgencias |
+| Los 3 días incompletos quedan en blanco (`NaN`), sin imputación | Tutora | Su número de llegadas no es real; rellenarlos sería inventar datos, y borrarlos dejaría huecos en el calendario |
+| División cronológica por años completos, A (test 2026) o B (test 2025) | Tutora | La validación recorre todas las estaciones; el test se usa una sola vez |
+| Menos de 16 años → PED, también en Ginecología u Obstetricia | Tutora | Corte fijado para este trabajo |
+| Meteorología solo hasta el día en que se predice | Tutora | No usar información que no se conoce al hacer la predicción |
 | Edad en años cumplidos el día de cada llegada | Paula | El estudio debe usar la edad real del paciente en cada episodio |
 | Normalización min-max con mínimo y máximo de entrenamiento | Paula | El anteproyecto pide normalizar sin fijar el método; el mínimo y el máximo de entrenamiento evitan la fuga de datos |
-| Sin variables ni pruebas que no estén en el anteproyecto | Criterio del trabajo | Ceñirse a lo aprobado; la selección de variables va en la Fase 2 |
+| Fuera del anteproyecto, solo lo que tenga un motivo, un orden lógico y quede documentado | Tutora | El anteproyecto es el esqueleto; no se añade nada «por si acaso» |
 
-Siguientes pasos, según el anteproyecto:
+Siguientes pasos:
 
-- [ ] Explicar en la memoria los 3 huecos de la serie y por qué se eliminaron esos días.
-- [ ] Fase 2 · Modelos de referencia: persistencia (repetir el día anterior) y naïve estacional semanal (repetir el mismo día de la semana anterior), buscando esos días por fecha.
-- [ ] Fase 2 · ARIMA y SARIMAX con estacionalidad semanal y regresores de calendario.
-- [ ] Fase 2 · Ensembles de árboles (árboles de decisión, XGBoost) y redes neuronales (tradicionales y Transformers).
+- [ ] Actualizar los Excel de la Fase 1 a 1.461 días con los 3 días en blanco y la división A.
+- [ ] Explicar en la memoria los 3 días en blanco y por qué no se imputan.
+- [ ] Fase 2 · Baselines: persistencia (mañana = hoy) y naïve estacional semanal (mismo día de la semana anterior).
+- [ ] Fase 2 · ARIMA → SARIMA → SARIMAX, con el estudio de qué días anteriores usar.
+- [ ] Fase 2 · Estudio de relevancia de las exógenas (con y sin ellas), empezando en SARIMAX.
+- [ ] Fase 2 · Ensembles de árboles (árbol de decisión, XGBoost) y redes neuronales (tradicionales y Transformers).
 - [ ] Fase 2 · Predicción de 1 a 7 días con incertidumbre, desglosada por áreas, comparada con el sistema actual del hospital, y una interfaz para probar los modelos.
