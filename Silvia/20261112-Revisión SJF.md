@@ -32,7 +32,8 @@ Cuando termine la Fase 2 y se sepa cuál es el mejor modelo, se repite **solo es
 | Validación | 2025 | 365 | 25 % |
 | Test | 01/01/2026 – 30/06/2026 | 181 | — |
 
-- Se usa la **misma familia de modelos** y se vuelven a buscar los mejores hiperparámetros **en la validación (2025)**, dentro del **mismo rango de búsqueda** que en el experimento 1. Es normal que los hiperparámetros salgan distintos, porque hay 6 meses más de datos.
+- Se usa la **misma familia de modelos** y se vuelven a buscar los mejores hiperparámetros **en la validación (2025)**. Es normal que salgan distintos a los del experimento 1, porque hay 6 meses más de datos.
+- Si se amplía o se cambia el rango de búsqueda (los valores que se prueban para cada hiperparámetro), debe ser por lo que se vea en la validación, **nunca por los resultados del test del experimento 1**.
 - Los datos de 2026 **no se usan para entrenar ni para ajustar nada**.
 - La normalización se vuelve a calcular con el entrenamiento de este experimento.
 
