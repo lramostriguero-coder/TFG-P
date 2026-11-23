@@ -2,8 +2,8 @@
 
 ## Lectura
 
-- Episodios leídos: **778,472** (2022: 190,609, 2023: 191,041, 2024: 196,957, 2025: 199,865)
-- Filas de codificación leídas: **3,816,119**
+- Episodios leídos: **877,199** (2022: 190,609, 2023: 191,041, 2024: 196,957, 2025: 199,865, 2026: 98,727)
+- Filas de codificación leídas: **4,293,702**
 
 ## Duplicados
 
@@ -16,17 +16,17 @@
 
 | Marca | Episodios | Significado |
 |---|---|---|
-| `flag_edad_invalida` | 1 (0.00 %) | fecha de nacimiento imposible (edad < 0 o > 120 años); edad vacía |
-| `flag_sin_triaje` | 6112 (0.79 %) | sin nivel de triaje registrado |
-| `flag_triaje_incoherente` | 1143 (0.15 %) | triaje antes de la llegada o después de la salida |
-| `flag_estancia_larga` | 1064 (0.14 %) | más de 72 h en urgencias |
+| `flag_edad_invalida` | 2 (0.00 %) | fecha de nacimiento imposible (edad < 0 o > 120 años); edad vacía |
+| `flag_sin_triaje` | 6919 (0.79 %) | sin nivel de triaje registrado |
+| `flag_triaje_incoherente` | 1855 (0.21 %) | triaje antes de la llegada o después de la salida |
+| `flag_estancia_larga` | 1240 (0.14 %) | más de 72 h en urgencias |
 | `flag_fin_antes_inicio` | 0 (0.00 %) | fecha de salida anterior a la de llegada |
-| `flag_fuera_periodo` | 60 (0.01 %) | llegada fuera de 2022-2025 |
-| `flag_sin_diagnostico` | 42850 (5.50 %) | sin diagnóstico principal codificado |
+| `flag_fuera_periodo` | 60 (0.01 %) | llegada fuera del periodo 01/01/2022 - 30/06/2026 |
+| `flag_sin_diagnostico` | 50194 (5.72 %) | sin diagnóstico principal codificado |
 
 - Fechas no válidas convertidas a nulo: {'fecha_triaje': 344}
 - Edades del fichero incoherentes con la fecha de nacimiento (>1 año): 0
-- `edad` = años cumplidos el día de la llegada (entero). Episodios en los que no coincide con la parte entera de la edad decimal del fichero (por redondeo a 2 decimales): 3022
+- `edad` = años cumplidos el día de la llegada (entero). Episodios en los que no coincide con la parte entera de la edad decimal del fichero (por redondeo a 2 decimales): 3397
 
 ## Columnas descartadas
 
@@ -41,53 +41,53 @@
 
 ## Resultado
 
-- `episodios_limpios.parquet`: **778,472** episodios × 35 columnas
-- `codificacion_limpia.parquet`: **3,816,119** filas
-- Episodios con diagnóstico principal: 94.5 %
+- `episodios_limpios.parquet`: **877,199** episodios × 35 columnas
+- `codificacion_limpia.parquet`: **4,293,702** filas
+- Episodios con diagnóstico principal: 94.3 %
 
 ### Reparto por área asistencial
 
 | area   |   episodios |
 |:-------|------------:|
-| GEN    |      562603 |
-| PED    |      157165 |
-| GIN    |       58704 |
+| GEN    |      634866 |
+| PED    |      175248 |
+| GIN    |       67085 |
 
 ### Reparto por nivel de triaje (1 = crítico … 5 = no urgente)
 
 | nivel_triaje   |   episodios |
 |:---------------|------------:|
-| 1              |        1173 |
-| 2              |       45422 |
-| 3              |      223663 |
-| 4              |      485048 |
-| 5              |       17054 |
-| <NA>           |        6112 |
+| 1              |        1279 |
+| 2              |       51372 |
+| 3              |      251548 |
+| 4              |      546808 |
+| 5              |       19273 |
+| <NA>           |        6919 |
 
 ### Diagnóstico principal por capítulo CIE-10
 
 | dx_capitulo                                 |   episodios |
 |:--------------------------------------------|------------:|
-| Traumatismos y envenenamientos              |      130592 |
-| Síntomas y hallazgos anormales              |      110243 |
-| Aparato respiratorio                        |       89574 |
-| Aparato musculoesquelético                  |       61930 |
-| Aparato digestivo                           |       46702 |
-| Aparato genitourinario                      |       44022 |
-| Ojo                                         |       43555 |
-| <NA>                                        |       42850 |
-| Embarazo, parto y puerperio                 |       38820 |
-| Infecciosas y parasitarias                  |       34390 |
-| Aparato circulatorio                        |       23645 |
-| Oído                                        |       20851 |
-| Trastornos mentales                         |       18351 |
-| Piel y tejido subcutáneo                    |       17896 |
-| Factores que influyen en el estado de salud |       17140 |
-| Sistema nervioso                            |       13381 |
-| Códigos especiales (COVID-19)               |        8850 |
-| Endocrinas, nutricionales y metabólicas     |        4492 |
-| Sangre y órganos hematopoyéticos            |        3232 |
-| Afecciones perinatales                      |        3144 |
-| Neoplasias                                  |        2471 |
-| Causas externas                             |        2158 |
-| Malformaciones congénitas                   |         183 |
+| Traumatismos y envenenamientos              |      147520 |
+| Síntomas y hallazgos anormales              |      126325 |
+| Aparato respiratorio                        |       97846 |
+| Aparato musculoesquelético                  |       70276 |
+| Aparato digestivo                           |       52400 |
+| <NA>                                        |       50194 |
+| Ojo                                         |       49340 |
+| Aparato genitourinario                      |       49167 |
+| Embarazo, parto y puerperio                 |       44763 |
+| Infecciosas y parasitarias                  |       38150 |
+| Aparato circulatorio                        |       26339 |
+| Oído                                        |       23003 |
+| Trastornos mentales                         |       20734 |
+| Piel y tejido subcutáneo                    |       20060 |
+| Factores que influyen en el estado de salud |       19474 |
+| Sistema nervioso                            |       15159 |
+| Códigos especiales (COVID-19)               |        8874 |
+| Endocrinas, nutricionales y metabólicas     |        4952 |
+| Sangre y órganos hematopoyéticos            |        3600 |
+| Afecciones perinatales                      |        3593 |
+| Neoplasias                                  |        2724 |
+| Causas externas                             |        2488 |
+| Malformaciones congénitas                   |         218 |
