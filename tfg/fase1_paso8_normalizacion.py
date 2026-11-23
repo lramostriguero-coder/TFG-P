@@ -19,9 +19,11 @@ Reglas que se aplican:
   3. Variables binarias (0/1: festivo, vacaciones…) → se dejan igual.
 
 MUY IMPORTANTE: el mínimo y el máximo se calculan SOLO con los días de
-ENTRENAMIENTO (2022-2023); los días incompletos ya se eliminaron en el paso 2.
-Después se aplican esos mismos valores a validación y test. Si se usaran los
-datos de 2024-2025 para calcularlos, el modelo "vería" información del futuro
+ENTRENAMIENTO de la división elegida en el paso 2 (división A: 2022-2024;
+división B: 2022-2023). Los 3 días incompletos tienen las llegadas en blanco
+(NaN): no cuentan para el mínimo ni el máximo y siguen en blanco después de
+normalizar. Después se aplican esos mismos valores a validación y test. Si se usaran los
+datos de validación o test para calcularlos, el modelo "vería" información del futuro
 (fuga de datos). Por eso, en validación y test algún día puede quedar un poco
 por debajo de 0 o por encima de 1, si supera los valores de entrenamiento.
 
@@ -53,7 +55,10 @@ def ajustar(datos: pd.DataFrame) -> pd.DataFrame:
     for col in CONTINUAS:
         x = np.log1p(entr[col]) if col in LOGARITMO else entr[col]
         filas.append({"variable": col, "transformacion": "log(1+x) y min-max" if col in LOGARITMO else "min-max",
-                      "minimo": x.min(), "maximo": x.max(), "dias_usados": len(x)})
+                      "minimo": x.min(), "maximo": x.max(),          # min() y max() ignoran los NaN
+                      "dias_usados": int(x.notna().sum()),
+                      "entrenamiento_desde": f"{entr.index.min():%Y-%m-%d}",
+                      "entrenamiento_hasta": f"{entr.index.max():%Y-%m-%d}"})
     return pd.DataFrame(filas).set_index("variable")
 
 
@@ -85,12 +90,14 @@ def main():
     norm = transformar(datos, params)
 
     # Comprobaciones: en entrenamiento cada variable va exactamente de 0 a 1,
-    # y desnormalizar devuelve los valores originales.
+    # los días en blanco siguen en blanco y desnormalizar devuelve los valores
+    # originales.
     entr = norm[norm["particion"] == "entrenamiento"]
     for col in CONTINUAS:
         assert entr[f"{col}_normalizada"].min() == 0 and entr[f"{col}_normalizada"].max() == 1, col
+        assert norm[f"{col}_normalizada"].isna().equals(datos[col].isna()), col
         tol = 1e-4 * (params.loc[col, "maximo"] - params.loc[col, "minimo"]) + 1e-9    # por el redondeo a 4 decimales
-        assert np.allclose(desnormalizar(norm[f"{col}_normalizada"], col, params), datos[col], atol=tol), col
+        assert np.allclose(desnormalizar(norm[f"{col}_normalizada"], col, params), datos[col], atol=tol, equal_nan=True), col
 
     params.round(6).to_csv(PROCESADOS / "parametros_normalizacion.csv")
     norm.to_csv(PROCESADOS / "dataset_fase1_normalizado.csv")
