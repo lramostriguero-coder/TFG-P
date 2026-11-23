@@ -128,6 +128,15 @@ En `C:\PAULA\UNI\TFG\Datos_urgencias\FASE1` hay dos Excel con las fórmulas visi
 
 Orden de trabajo (revisiones de la tutora, 11/11/2026 y 12/11/2026):
 
+### Paso 1 · Baselines — ✅ `tfg/fase2_paso1_baselines.py` (23/11/2026)
+
+- Persistencia ŷ(t+h) = y(t) y naïve semanal ŷ(t+h) = y(t+h−7), horizontes 1–7, evaluados en validación (365 días, ninguno descartado). Métricas MAE, RMSE y MAPE sobre las llegadas sin normalizar (criterio propio).
+- **Naïve semanal: MAE 36,8 · RMSE 47,4 · MAPE 6,9 % en todos los horizontes** (es la nota a batir). La persistencia va de 36,8 (h = 7) a 51,9 (h = 4): huella del ciclo semanal.
+- **Incertidumbre:** intervalo del 90 % empírico, [pred + P5 ; pred + P95] con los percentiles del error en entrenamiento. Naïve semanal: [−74 ; +71], cobertura en validación 90,4 %.
+- **Áreas (naïve semanal, MAE):** PED 14,4 (16,7 %), GIN 8,3 (20,2 %), GEN 28,5 (7,2 %).
+- Informe: `informes/fase2_paso1_baselines.md`, con tabla, gráfica y ejemplo con números reales.
+- Excel con fórmulas: `C:\PAULA\UNI\TFG\Datos_urgencias\FASE2\baselines_fase2.xlsx` (generado con `tfg/fase2_paso1_excel.py`). Coincide con Python y no tiene errores de fórmula.
+
 1. **Baselines:** persistencia (mañana = hoy) y naïve estacional semanal (mismo día de la semana anterior). Son la nota mínima que hay que superar.
 2. **ARIMA → SARIMA → SARIMAX**, con el estudio de qué días anteriores usar (abajo). Indicación de la tutora: **empezar por ARIMA**, primero entender el algoritmo (la teoría), después aplicarlo y luego ir mejorando los resultados.
 3. **Estudio de relevancia de las exógenas**, empezando en SARIMAX (abajo).
@@ -173,5 +182,7 @@ Los resultados se guardan en `datos/procesados/` (no se suben a GitHub).
 - [x] Revisión de la tutora del 12/11/2026 (`Silvia/20261112-Revisión SJF.md`): datos de enero–junio de 2026 en la Fase 1 (1.642 días), días incompletos revisados (se recupera el 31/12/2025; el 30/06/2026 en blanco), festivos y calendario escolar de 2026, meteorología hasta junio de 2026 y parámetro `EXPERIMENTO` 1/2 (puesto el 1). Excel actualizados (15/11/2026).
 - [x] 24/05/2024 marcado como dato faltante (llegadas bajas todo el día, sin corte horario), por decisión de Paula (23/11/2026). Excel actualizados (copia previa en `FASE1\copia_antes_marcar_20240524\`).
 - [ ] Comentar a la tutora que se ha marcado el 24/05/2024.
+- [ ] Preguntar a la tutora si el intervalo de incertidumbre del 90 % (criterio propio; el anteproyecto y sus revisiones no fijan nivel) le parece bien o prefiere otro (p. ej. 95 %).
 - [x] Previsiones meteorológicas históricas: no hay para todo el entrenamiento (Open-Meteo *Previous Runs* empieza en enero de 2024). Se usa la meteorología observada hasta el día *t* (23/11/2026).
-- [ ] Fase 2: teoría de ARIMA, baselines y ARIMA con el experimento 1.
+- [x] Fase 2 · Baselines (23/11/2026).
+- [ ] Fase 2: teoría de ARIMA y ARIMA con el experimento 1.
