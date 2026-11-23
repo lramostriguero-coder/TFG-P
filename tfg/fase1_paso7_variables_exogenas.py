@@ -7,18 +7,21 @@ La incorporación de estas variables requerirá, además, un proceso de búsqued
 selección y validación de fuentes fiables, así como su correcta alineación
 temporal con la serie de llegadas del hospital."
 
-Se añaden a la serie diaria (una fila por día, 2022-2025) dos grupos de variables:
+Se añaden a la serie diaria (una fila por día, 01/01/2022-30/06/2026) dos grupos de variables:
 
 A) CALENDARIO
    Fuentes oficiales:
    - Festivos: decretos de fiestas laborales de la Comunidad de Madrid
      (2022, Decreto 2021; 2023, Decreto 101/2022; 2024, BOCM 28/09/2023;
-     2025, Decreto 93/2024, BOCM 26/09/2024). Validados además con la
-     librería `holidays` (Spain, subdiv='MD'): coinciden los 48 días.
+     2025, Decreto 93/2024, BOCM 26/09/2024; 2026, Decreto 75/2025, BOCM
+     núm. 229 de 25/09/2025, solo hasta junio). Validados además con la
+     librería `holidays` (Spain, subdiv='MD'): coinciden los 54 días.
    - Calendario escolar: notas oficiales de la Comunidad de Madrid para
      Infantil y Primaria de los cursos 2021-22 a 2025-26. El curso 2025-26
-     está confirmado con la Orden 1476/2025 (BOCM núm. 113, 13/05/2025) y la
-     nota de prensa oficial de 06/05/2025.
+     está confirmado con la Orden 1476/2025 (BOCM núm. 113, 13/05/2025), la
+     nota de prensa oficial de 06/05/2025 y el «Calendario escolar 2025-2026.
+     Cuadro síntesis informativo» de la Consejería de Educación, Ciencia y
+     Universidades (fin de clases 19/06/2026).
    No se incluyen las 2 fiestas locales de cada municipio, porque los
    pacientes vienen de muchos municipios distintos (Majadahonda, Las Rozas,
    Pozuelo, Boadilla...).
@@ -26,8 +29,9 @@ A) CALENDARIO
 B) METEOROLOGÍA
    Fuente: Open-Meteo, API de datos históricos (reanálisis ERA5), punto de
    rejilla más cercano al hospital (40,457 N; 3,935 O; 741 m), zona de
-   Majadahonda. Descargado el 26/10/2026 y comprobado con sumas de control.
-   Fichero: datos/externos/meteo_open_meteo_2022_2025.csv
+   Majadahonda. Fichero: datos/externos/meteo_open_meteo_2022_2026.csv,
+   generado con `tfg/descargar_meteo.py` (15/11/2026). Los días de 2022-2025
+   coinciden exactamente con la descarga original del 26/10/2026.
 
 Uso:
     python tfg/fase1_paso7_variables_exogenas.py
@@ -68,6 +72,10 @@ FESTIVOS = {
     "2025-05-02": "Fiesta de la Comunidad de Madrid", "2025-07-25": "Santiago Apóstol",
     "2025-08-15": "Asunción", "2025-11-01": "Todos los Santos", "2025-12-06": "Constitución",
     "2025-12-08": "Inmaculada", "2025-12-25": "Navidad",
+    # 2026 (Decreto 75/2025; solo hasta junio, la serie acaba el 30/06/2026)
+    "2026-01-01": "Año Nuevo", "2026-01-06": "Epifanía", "2026-04-02": "Jueves Santo",
+    "2026-04-03": "Viernes Santo", "2026-05-01": "Fiesta del Trabajo",
+    "2026-05-02": "Fiesta de la Comunidad de Madrid",
 }
 
 # ---------------------------------------------------------------------------
@@ -87,7 +95,9 @@ VACACIONES = [
     ("2024-12-21", "2025-01-07", "Navidad"),       # curso 2024-25
     ("2025-04-11", "2025-04-21", "Semana Santa"),
     ("2025-06-21", "2025-09-07", "Verano"),        # fin 20/06/2025, inicio 08/09/2025
-    ("2025-12-20", "2025-12-31", "Navidad"),       # curso 2025-26 (Orden 1476/2025); la serie acaba el 31/12
+    ("2025-12-20", "2026-01-06", "Navidad"),       # curso 2025-26 (Orden 1476/2025)
+    ("2026-03-28", "2026-04-05", "Semana Santa"),
+    ("2026-06-20", "2026-06-30", "Verano"),        # fin 19/06/2026; la serie acaba el 30/06
 ]
 # Días no lectivos sueltos (fuera de los periodos vacacionales y de los festivos)
 NO_LECTIVOS = [
@@ -96,7 +106,7 @@ NO_LECTIVOS = [
     "2023-10-13", "2023-12-07", "2024-02-22", "2024-02-23", "2024-03-22",
     "2024-04-01", "2024-05-03",                                       # curso 2023-24
     "2025-02-28", "2025-03-03",                                       # curso 2024-25
-    "2025-10-13", "2025-11-03",                                       # curso 2025-26
+    "2025-10-13", "2025-11-03", "2026-01-07", "2026-03-27", "2026-04-06",   # curso 2025-26
 ]
 
 
@@ -130,7 +140,7 @@ def variables_calendario(fechas: pd.DatetimeIndex) -> pd.DataFrame:
 
 
 def variables_meteo(fechas: pd.DatetimeIndex) -> pd.DataFrame:
-    m = pd.read_csv(EXTERNOS / "meteo_open_meteo_2022_2025.csv", parse_dates=["fecha"]).set_index("fecha")
+    m = pd.read_csv(EXTERNOS / "meteo_open_meteo_2022_2026.csv", parse_dates=["fecha"]).set_index("fecha")
     m = m.reindex(fechas)
     assert m.notna().all().all(), "Faltan días en la meteorología"
     return m
@@ -143,18 +153,19 @@ def main():
     met = variables_meteo(fechas)
     datos = pd.concat([serie.drop(columns=["dia_semana"]), cal, met], axis=1)
 
-    # Comprobaciones de alineación temporal: calendario completo de 1.461 días,
-    # sin huecos. Los 3 días incompletos están, con las llegadas en blanco (NaN),
+    # Comprobaciones de alineación temporal: calendario completo de 1.642 días,
+    # sin huecos. Los 4 días incompletos están, con las llegadas en blanco (NaN),
     # pero su calendario y su meteorología sí están rellenos.
-    completo = pd.date_range("2022-01-01", "2025-12-31", freq="D")
-    incompletos = pd.to_datetime(["2023-04-14", "2023-06-16", "2025-12-31"])
+    completo = pd.date_range("2022-01-01", "2026-06-30", freq="D")
+    incompletos = pd.to_datetime(["2023-04-14", "2023-06-16", "2024-05-24", "2026-06-30"])
     assert datos.index.equals(completo)
     assert datos.index[datos["llegadas"].isna()].equals(incompletos)
     assert datos[list(cal.columns) + list(met.columns)].notna().all().all()
     assert datos["festivo"].sum() == len(FESTIVOS)
     try:                                                              # validación cruzada opcional
         import holidays
-        lib = {pd.Timestamp(d) for y in range(2022, 2026) for d in holidays.Spain(years=y, subdiv="MD")}
+        lib = {pd.Timestamp(d) for y in range(2022, 2027) for d in holidays.Spain(years=y, subdiv="MD")
+               if pd.Timestamp(d) <= completo[-1]}
         assert lib == set(pd.to_datetime(list(FESTIVOS))), "Los festivos no coinciden con la librería"
     except ImportError:
         pass

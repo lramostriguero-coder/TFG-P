@@ -9,21 +9,23 @@ Qué hace este script:
     1. Cuenta los episodios de cada día según su FECHA DE LLEGADA (`fecha_inicio`):
        total y desglose por área (PED, GIN, GEN). También cuenta las salidas
        (`fecha_fin`) como referencia.
-    2. Garantiza un calendario continuo: los 1.461 días de 2022-2025, aunque un
-       día no tuviera ningún episodio.
-    3. Los días con registros perdidos (14/04/2023, 16/06/2023 y 31/12/2025)
+    2. Garantiza un calendario continuo: los 1.642 días del 01/01/2022 al
+       30/06/2026, aunque un día no tuviera ningún episodio.
+    3. Los días con registros perdidos o dudosos (14/04/2023, 16/06/2023,
+       24/05/2024 y 30/06/2026)
        se tratan como DATO FALTANTE, sin imputación (revisión de la tutora,
        11/11/2026): se quedan en la serie, pero `llegadas`, `llegadas_PED`,
        `llegadas_GIN`, `llegadas_GEN` y `salidas` van en blanco (NaN). No se
-       rellenan con ningún valor estimado. La serie mantiene los 1.461 días,
-       sin huecos en el calendario. La gráfica muestra en rojo lo que se
-       llegó a registrar esos días, para documentarlo.
-    4. Asigna a cada día su partición cronológica, con años completos.
-       La división se elige con el parámetro DIVISION:
-           "A" (preferida)  entrenamiento 2022-2024 · validación 2025 · test 2026
-           "B"              entrenamiento 2022-2023 · validación 2024 · test 2025
-       Con la A, el test (2026) aún no tiene datos: los días de 2022-2025 son
-       todos de entrenamiento o validación.
+       rellenan con ningún valor estimado. La serie no tiene huecos en el
+       calendario. La gráfica muestra en rojo lo que se llegó a registrar esos
+       días, para documentarlo. El 31/12/2025 ya no está incompleto: con el
+       fichero de 2026 aparecen los pacientes que salieron en 2026.
+    4. Asigna a cada día su partición cronológica. El experimento se elige con
+       el parámetro EXPERIMENTO (revisión de la tutora, 12/11/2026):
+           1  entrenamiento 01/2022-06/2024 · validación 07/2024-06/2025 · test 07/2025-06/2026
+           2  entrenamiento 2022-2024 · validación 2025 · test 01/2026-06/2026
+       El experimento 1 es el de toda la Fase 2; el 2 se hace solo con el mejor
+       modelo, y los dos se comparan sobre enero-junio de 2026.
     5. Guarda `datos/procesados/serie_diaria.csv` y una gráfica en `informes/`.
 
 Uso:
@@ -41,22 +43,21 @@ RAIZ = Path(__file__).resolve().parent.parent
 PROCESADOS = RAIZ / "datos" / "procesados"
 INFORMES = RAIZ / "informes"
 
-INICIO, FIN = "2022-01-01", "2025-12-31"
+INICIO, FIN = "2022-01-01", "2026-06-30"
 
-# División cronológica del conjunto de datos (revisión de la tutora, 11/11/2026).
-# Para cambiar de división basta con cambiar esta línea y volver a ejecutar
-# los pasos 2, 7 y 8.
-DIVISION = "A"
+# Experimento (revisión de la tutora, 12/11/2026). Para cambiar de experimento
+# basta con cambiar esta línea y volver a ejecutar los pasos 2, 7 y 8.
+EXPERIMENTO = 1
 
-DIVISIONES = {                       # (nombre, desde, hasta) — ambos incluidos
-    "A": [("entrenamiento", "2022-01-01", "2024-12-31"),
-          ("validacion",    "2025-01-01", "2025-12-31"),
-          ("test",          "2026-01-01", "2026-12-31")],    # cuando lleguen los datos
-    "B": [("entrenamiento", "2022-01-01", "2023-12-31"),
-          ("validacion",    "2024-01-01", "2024-12-31"),
-          ("test",          "2025-01-01", "2025-12-31")],
+EXPERIMENTOS = {                     # (nombre, desde, hasta) — ambos incluidos
+    1: [("entrenamiento", "2022-01-01", "2024-06-30"),     # 912 días (71 %)
+        ("validacion",    "2024-07-01", "2025-06-30"),     # 365 días (29 %)
+        ("test",          "2025-07-01", "2026-06-30")],    # 365 días
+    2: [("entrenamiento", "2022-01-01", "2024-12-31"),     # 1.096 días (75 %)
+        ("validacion",    "2025-01-01", "2025-12-31"),     # 365 días (25 %)
+        ("test",          "2026-01-01", "2026-06-30")],    # 181 días
 }
-PARTICIONES = DIVISIONES[DIVISION]
+PARTICIONES = EXPERIMENTOS[EXPERIMENTO]
 
 # Columnas que se cuentan con los episodios: en los días incompletos van en blanco
 CONTEOS = ["llegadas", "llegadas_PED", "llegadas_GIN", "llegadas_GEN", "salidas"]
@@ -66,7 +67,10 @@ CONTEOS = ["llegadas", "llegadas_PED", "llegadas_GIN", "llegadas_GEN", "salidas"
 DIAS_INCOMPLETOS = {
     "2023-04-14": "casi no hay salidas registradas en todo el día (90 de ~500)",
     "2023-06-16": "no hay ninguna salida registrada de 14:00 a 23:59",
-    "2025-12-31": "faltan los pacientes que salieron en 2026 (no hay fichero de 2026)",
+    "2024-05-24": "408 llegadas (lo normal ese mes, unas 565), bajas durante todo el día "
+                  "y sin un corte horario; se marca por decisión de Paula (23/11/2026)",
+    "2026-06-30": "faltan los pacientes que salieron en julio de 2026 (no hay fichero): "
+                  "de 21:00 a 23:59 solo hay 8 llegadas",
 }
 
 
@@ -103,7 +107,7 @@ def dejar_en_blanco(serie: pd.DataFrame) -> pd.DataFrame:
     final = serie.drop(columns="dato_incompleto").astype({c: "float" for c in CONTEOS})
     final.loc[serie["dato_incompleto"], CONTEOS] = float("nan")
 
-    # Comprobaciones: siguen los 1.461 días, solo esos 3 días están en blanco
+    # Comprobaciones: siguen todos los días, solo esos días están en blanco
     # y el resto de días no ha cambiado
     assert final.index.equals(serie.index)
     en_blanco = final[CONTEOS].isna()
@@ -114,6 +118,11 @@ def dejar_en_blanco(serie: pd.DataFrame) -> pd.DataFrame:
     return final
 
 
+def periodo(desde: str, hasta: str) -> str:
+    """'2022-01-01', '2024-06-30' → '01/2022–06/2024'."""
+    return f"{desde[5:7]}/{desde[:4]}–{hasta[5:7]}/{hasta[:4]}"
+
+
 def grafica(serie: pd.DataFrame, ruta: Path):
     azul, rojo, gris = "#2a78d6", "#e34948", "#52514e"
     fig, ax = plt.subplots(figsize=(13, 4.8), dpi=150)
@@ -122,8 +131,7 @@ def grafica(serie: pd.DataFrame, ruta: Path):
     for nombre, desde, hasta in PARTICIONES:
         if pd.Timestamp(desde) > pd.Timestamp(FIN):          # partición todavía sin datos
             continue
-        anios = f"{desde[:4]}–{hasta[:4]}" if desde[:4] != hasta[:4] else desde[:4]
-        titulo = f"{etiqueta[nombre]} ({anios})"
+        titulo = f"{etiqueta[nombre]} ({periodo(desde, hasta)})"
         ax.axvspan(pd.Timestamp(desde), pd.Timestamp(hasta) + pd.Timedelta(days=1),
                    color=fondo[nombre], zorder=0, lw=0)
         ax.text(pd.Timestamp(desde) + pd.Timedelta(days=8), 790, titulo,
@@ -139,8 +147,10 @@ def grafica(serie: pd.DataFrame, ruta: Path):
     ax.scatter(malos.index, malos["llegadas"], s=40, color=rojo, zorder=4,
                edgecolor="white", linewidth=1.5)
     for fecha, fila in malos.iterrows():
+        al_final = fecha > pd.Timestamp(FIN) - pd.Timedelta(days=90)   # texto a la izquierda del punto
         ax.annotate(f"{fecha:%d/%m/%Y}\n{fila['llegadas']} (incompleto, sin dato)",
-                    (fecha, fila["llegadas"]), xytext=(8, -4), textcoords="offset points",
+                    (fecha, fila["llegadas"]), xytext=(-8 if al_final else 8, -4),
+                    textcoords="offset points", ha="right" if al_final else "left",
                     fontsize=8, color=gris, va="top")
 
     ax.set_ylim(100, 800)
@@ -179,7 +189,7 @@ def main():
     # Los días incompletos se quedan, con los conteos en blanco (sin imputar)
     final = dejar_en_blanco(serie)
     final.to_csv(PROCESADOS / "serie_diaria.csv")
-    print(f"\nDivisión {DIVISION}: " + " · ".join(f"{n} {d[:4]}–{h[:4]}" for n, d, h in PARTICIONES))
+    print(f"\nExperimento {EXPERIMENTO}: " + " · ".join(f"{n} {periodo(d, h)}" for n, d, h in PARTICIONES))
     print(f"Días en blanco (NaN, sin imputar): {', '.join(DIAS_INCOMPLETOS)}")
     print(f"Guardado: {PROCESADOS / 'serie_diaria.csv'} ({len(final)} días)")
 

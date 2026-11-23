@@ -9,7 +9,10 @@ inconsistentes, así como la homogeneización de los distintos campos
 disponibles en un formato unificado."
 
 Qué hace este script:
-    1. Lee los volcados anuales de episodios y codificación (2022-2025) y los une.
+    1. Lee los volcados de episodios y codificación (2022-2025, un fichero por
+       año, y enero-junio de 2026, en la carpeta `sql_2026/sql_2026`) y los une.
+       Los ficheros parecen repartidos por fecha de SALIDA: el de 2026 trae
+       también episodios que llegaron a finales de 2025 y salieron en 2026.
     2. Convierte cada columna a su tipo (fechas, números, texto limpio).
     3. Trata DUPLICADOS (se eliminan).
     4. Marca registros INCOMPLETOS e INCONSISTENTES con columnas `flag_*`
@@ -32,8 +35,18 @@ import pandas as pd
 
 from lectura_sql import leer_volcado
 
-ANIOS = [2022, 2023, 2024, 2025]
+ANIOS = [2022, 2023, 2024, 2025, 2026]
 RAIZ = Path(__file__).resolve().parent.parent
+
+# Periodo de estudio: llegadas del 01/01/2022 al 30/06/2026 (último dato de 2026)
+INICIO_PERIODO, FIN_PERIODO = "2022-01-01", "2026-06-30"
+
+
+def ruta_fichero(origen: Path, tabla: str, anio: int) -> Path:
+    """2022-2025: `episodios (2022).sql`...; 2026 llegó aparte: `sql_2026/sql_2026/episodios.sql`."""
+    if anio == 2026:
+        return origen / "sql_2026" / "sql_2026" / f"{tabla}.sql"
+    return origen / f"{tabla} ({anio}).sql"
 
 # Columnas que se descartan y por qué
 COLUMNAS_DESCARTADAS = {
@@ -81,7 +94,7 @@ CAPITULOS_CIE10 = [
 def leer_anios(origen: Path, tabla: str) -> pd.DataFrame:
     partes = []
     for anio in ANIOS:
-        ruta = origen / f"{tabla} ({anio}).sql"
+        ruta = ruta_fichero(origen, tabla, anio)
         print(f"  leyendo {ruta.name} ...", flush=True)
         df = leer_volcado(ruta)
         df["anio_fichero"] = anio          # de qué fichero viene cada fila
@@ -175,7 +188,8 @@ def curar_episodios(ep: pd.DataFrame, informe: dict) -> pd.DataFrame:
                                     (ep["fecha_triaje"] > ep["fecha_fin"])
     ep["flag_estancia_larga"] = ep["duracion_min"] > 72 * 60          # más de 72 h en urgencias
     ep["flag_fin_antes_inicio"] = ep["duracion_min"] < 0
-    ep["flag_fuera_periodo"] = (ep["fecha_inicio"] < "2022-01-01") | (ep["fecha_inicio"] >= "2026-01-01")
+    ep["flag_fuera_periodo"] = ((ep["fecha_inicio"] < INICIO_PERIODO) |
+                                (ep["fecha_inicio"] >= pd.Timestamp(FIN_PERIODO) + pd.Timedelta(days=1)))
 
     ep = ep.drop(columns=list(COLUMNAS_DESCARTADAS))
     informe["ep_filas_finales"] = len(ep)
@@ -263,7 +277,7 @@ def escribir_informe(ep: pd.DataFrame, cod: pd.DataFrame, inf: dict, ruta: Path)
         "flag_triaje_incoherente": "triaje antes de la llegada o después de la salida",
         "flag_estancia_larga": "más de 72 h en urgencias",
         "flag_fin_antes_inicio": "fecha de salida anterior a la de llegada",
-        "flag_fuera_periodo": "llegada fuera de 2022-2025",
+        "flag_fuera_periodo": "llegada fuera del periodo 01/01/2022 - 30/06/2026",
         "flag_edad_invalida": "fecha de nacimiento imposible (edad < 0 o > 120 años); edad vacía",
         "flag_sin_diagnostico": "sin diagnóstico principal codificado",
     }

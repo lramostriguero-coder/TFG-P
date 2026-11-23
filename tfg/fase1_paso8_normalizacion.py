@@ -19,8 +19,8 @@ Reglas que se aplican:
   3. Variables binarias (0/1: festivo, vacaciones…) → se dejan igual.
 
 MUY IMPORTANTE: el mínimo y el máximo se calculan SOLO con los días de
-ENTRENAMIENTO de la división elegida en el paso 2 (división A: 2022-2024;
-división B: 2022-2023). Los 3 días incompletos tienen las llegadas en blanco
+ENTRENAMIENTO del experimento elegido en el paso 2 (experimento 1:
+01/2022-06/2024; experimento 2: 2022-2024). Los días incompletos tienen las llegadas en blanco
 (NaN): no cuentan para el mínimo ni el máximo y siguen en blanco después de
 normalizar. Después se aplican esos mismos valores a validación y test. Si se usaran los
 datos de validación o test para calcularlos, el modelo "vería" información del futuro
